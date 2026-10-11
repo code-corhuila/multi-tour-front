@@ -25,6 +25,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Production build has no development sign-in
+        run: bash scripts/check-main-build.sh
+      - name: The check fails on a development build (it must detect what it guards)
+        run: |
+          npx ng build --configuration development --output-path dist/dev
+          test -f dist/dev/browser/index.html
+          ! bash scripts/check-main-build.sh dist/dev/browser
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      - name: Build the production image and check it
+        run: |
+          docker build -t multi-tour-front:ci .
+          bash scripts/check-image.sh multi-tour-front:ci
