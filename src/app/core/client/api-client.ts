@@ -1,4 +1,4 @@
-import { ApiClient, ApiError, RequestOptions } from './types';
+import { ApiClient, ApiError, ErrorDetail, RequestOptions } from './types';
 
 export const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -45,12 +45,27 @@ export function messageFor(status: number | undefined, code: string): string {
   );
 }
 
-function failure(status: number | undefined, code: string, traceId: string): ApiError {
-  return { status, code, message: messageFor(status, code), traceId };
+function failure(status: number | undefined, code: string, traceId: string, details?: ErrorDetail[]): ApiError {
+  return { status, code, message: messageFor(status, code), ...(details && { details }), traceId };
 }
 
 function isApiError(value: unknown): value is ApiError {
   return typeof value === 'object' && value !== null && 'traceId' in value && 'code' in value;
+}
+
+/** A field name that is safe to use as a map key in the portal. */
+const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_.[\]-]{0,99}$/;
+const MAX_DETAILS = 20;
+
+/**
+ * Only a non-empty list of {field, message} strings passes (all or nothing), capped in size. The portal matches on
+ * `field`; `message` is the server's text and is not for display (people see the one from `messageFor`).
+ */
+function readDetails(value: unknown): ErrorDetail[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const items = value.slice(0, MAX_DETAILS) as Partial<ErrorDetail>[];
+  const ok = items.every((d) => typeof d?.field === 'string' && FIELD_NAME.test(d.field) && typeof d.message === 'string');
+  return ok ? items.map((d) => ({ field: d.field!, message: d.message!.slice(0, 200) })) : undefined;
 }
 
 /** Only a path on the gateway: a leading single slash, no backslash, no scheme. */
@@ -62,11 +77,11 @@ function defaultCorrelationId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** The common envelope `{error, message, traceId}`; anything else (HTML from a proxy, empty body) is tolerated. */
-async function readEnvelope(response: Response): Promise<{ error?: string; traceId?: string }> {
+/** The common envelope `{error, message, details?, traceId}`; anything else (HTML from a proxy, empty body) is tolerated. */
+async function readEnvelope(response: Response): Promise<{ error?: string; traceId?: string; details?: unknown }> {
   try {
     const body: unknown = await response.json();
-    return (typeof body === 'object' && body !== null ? body : {}) as { error?: string; traceId?: string };
+    return (typeof body === 'object' && body !== null ? body : {}) as { error?: string; traceId?: string; details?: unknown };
   } catch {
     return {};
   }
@@ -126,6 +141,7 @@ export function createApiClient(options: ClientOptions): ApiClient {
           response.status,
           envelope.error ?? 'HTTP_ERROR',
           envelope.traceId ?? response.headers.get('X-Correlation-Id') ?? correlationId,
+          readDetails(envelope.details),
         );
       } catch (err) {
         if (isApiError(err)) throw err;
