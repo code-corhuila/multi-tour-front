@@ -6,3 +6,6 @@ dist/
 out-tsc/
 test-results/
 playwright-report/
+# Built portal modules are copied here for the image; only the folder is versioned.
+portals/*
+!portals/.gitkeep
