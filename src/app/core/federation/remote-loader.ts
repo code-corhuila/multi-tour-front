@@ -15,24 +15,42 @@ export const REMOTE_IMPORTER = new InjectionToken<RemoteImporter>('REMOTE_IMPORT
   factory: () => (url) => import(/* @vite-ignore */ url),
 });
 
-/** Manifest: `{ "<remote name>": "<url of an ES module that exports mount>" }`. */
-export async function loadManifest(
-  url = 'federation.manifest.json',
-  fetcher: (input: string) => Promise<Pick<Response, 'ok' | 'status' | 'json'>> = fetch,
-): Promise<Record<string, string>> {
-  const response = await fetcher(url);
-  if (!response.ok) throw new Error(`manifest ${url} answered ${response.status}`);
-  return response.json();
+/** Only same-origin modules may be imported. Returns the absolute url (relative ones resolve against the document). */
+export function resolveRemoteUrl(value: unknown): string {
+  if (typeof value !== 'string') throw new Error('remote url must be a string');
+  const url = new URL(value, document.baseURI);
+  if (url.origin !== location.origin) throw new Error(`remote url ${value} is not same-origin`);
+  return url.href;
 }
 
-/** Imports the remote and mounts it; rejects if the import fails or the module has no `mount`. */
+/** Manifest: `{ "<remote name>": "<same-origin url of an ES module that exports mount>" }`; unsafe entries are dropped with a warning. */
+export async function loadManifest(
+  url = 'federation.manifest.json',
+  fetcher: (input: string, init?: RequestInit) => Promise<Pick<Response, 'ok' | 'status' | 'json'>> = fetch,
+): Promise<Record<string, string>> {
+  const response = await fetcher(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`manifest ${url} answered ${response.status}`);
+  const raw = (await response.json()) as Record<string, unknown>;
+  const manifest: Record<string, string> = {};
+  for (const [name, value] of Object.entries(raw)) {
+    try {
+      resolveRemoteUrl(value);
+      manifest[name] = value as string;
+    } catch (err) {
+      console.warn(`remote "${name}" dropped from the manifest`, err);
+    }
+  }
+  return manifest;
+}
+
+/** Imports the remote and mounts it; rejects if the url is unsafe, the import fails or the module has no `mount`. */
 export async function mountRemote(
   importer: RemoteImporter,
   url: string,
   element: HTMLElement,
   props: RemoteProps,
 ): Promise<() => void> {
-  const remote = (await importer(url)) as Partial<RemoteModule>;
+  const remote = (await importer(resolveRemoteUrl(url))) as Partial<RemoteModule>;
   if (typeof remote.mount !== 'function') throw new Error(`remote ${url} does not export mount`);
   return remote.mount(element, props) ?? (() => undefined);
 }
