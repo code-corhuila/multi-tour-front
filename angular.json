@@ -21,6 +21,7 @@
           "configurations": {
             "production": {
               "outputHashing": "all",
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "assets": [{ "glob": "**/*", "input": "public" }],
               "fileReplacements": [
                 { "replace": "src/app/core/auth/dev-routes.ts", "with": "src/app/core/auth/dev-routes.production.ts" }
