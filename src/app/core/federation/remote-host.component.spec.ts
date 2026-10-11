@@ -1,8 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 import { RemoteHostComponent } from './remote-host.component';
-import { REMOTE_IMPORTER } from './remote-loader';
-import { loadManifest } from './remote-loader';
+import { loadManifest, mountRemote, REMOTE_IMPORTER } from './remote-loader';
 
 function createHost(importer: ReturnType<typeof vi.fn>) {
   TestBed.configureTestingModule({ providers: [{ provide: REMOTE_IMPORTER, useValue: importer }] });
@@ -47,11 +46,62 @@ describe('loadManifest', () => {
   it('reads the remote name to module url map', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ a: '/a.js' }) });
     expect(await loadManifest('m.json', fetcher)).toEqual({ a: '/a.js' });
-    expect(fetcher).toHaveBeenCalledWith('m.json');
+    expect(fetcher).toHaveBeenCalledWith('m.json', { cache: 'no-store' });
   });
 
   it('rejects when the manifest cannot be fetched', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: false, status: 404 });
     await expect(loadManifest('m.json', fetcher)).rejects.toThrow();
+  });
+});
+
+describe('manifest origin check', () => {
+  const unsafe = {
+    'cross-origin': 'https://evil.example/x.js',
+    data: 'data:text/javascript,export const mount=()=>{}',
+    blob: 'blob:https://evil.example/1234',
+    'protocol-relative': '//evil.example/x.js',
+    'non-string': 42,
+  };
+
+  it('drops unsafe entries with a warning and keeps the valid relative one', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ ...unsafe, good: 'stubs/ok.js' }) });
+    expect(Object.keys(await loadManifest('m.json', fetcher))).toEqual(['good']);
+    expect(warn).toHaveBeenCalledTimes(Object.keys(unsafe).length);
+    warn.mockRestore();
+  });
+
+  for (const [kind, url] of Object.entries(unsafe)) {
+    it(`mountRemote rejects a ${kind} url without importing it`, async () => {
+      const importer = vi.fn();
+      await expect(mountRemote(importer, url as string, document.createElement('div'), {})).rejects.toThrow();
+      expect(importer).not.toHaveBeenCalled();
+    });
+  }
+
+  it('imports a relative url resolved against the document base', async () => {
+    const importer = vi.fn().mockResolvedValue({ mount: vi.fn() });
+    await mountRemote(importer, 'stubs/ok.js', document.createElement('div'), {});
+    expect(importer).toHaveBeenCalledWith(new URL('stubs/ok.js', document.baseURI).href);
+  });
+});
+
+describe('retry of the unavailable area', () => {
+  it('mounts only that remote again without reloading the page', async () => {
+    const mount = vi.fn();
+    const importer = vi.fn().mockRejectedValueOnce(new Error('down')).mockResolvedValue({ mount });
+    const fixture = createHost(importer);
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('button')).not.toBeNull();
+    });
+    fixture.nativeElement.querySelector('button').click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(mount).toHaveBeenCalledTimes(1);
+    });
   });
 });
