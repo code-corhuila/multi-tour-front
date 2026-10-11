@@ -15,6 +15,9 @@ export interface ClientOptions {
 const BY_CODE: Record<string, string> = {
   TIMEOUT: 'The server took too long to answer. Try again.',
   NETWORK_ERROR: 'The server could not be reached. Check your connection and try again.',
+  ABORTED: 'The request was cancelled.',
+  INVALID_PATH: 'The request address is not valid.',
+  INVALID_RESPONSE: 'The server answered something that could not be read.',
 };
 
 const BY_STATUS: Record<number, string> = {
@@ -27,6 +30,12 @@ const BY_STATUS: Record<number, string> = {
   503: 'This service is not available right now. Try again later.',
 };
 
+/** The caller handles the 401 of this route (wrong or expired temporary credential), so it must not end the session. */
+const KEEPS_SESSION_ON_401 = 'PUT /api/v1/security/sessions/password';
+
+/** Set by the client, never by a caller. */
+const RESERVED_HEADERS = new Set(['authorization', 'x-correlation-id']);
+
 /** The single place that decides the message a person sees for a status or code. */
 export function messageFor(status: number | undefined, code: string): string {
   return (
@@ -38,6 +47,19 @@ export function messageFor(status: number | undefined, code: string): string {
 
 function failure(status: number | undefined, code: string, traceId: string): ApiError {
   return { status, code, message: messageFor(status, code), traceId };
+}
+
+function isApiError(value: unknown): value is ApiError {
+  return typeof value === 'object' && value !== null && 'traceId' in value && 'code' in value;
+}
+
+/** Only a path on the gateway: a leading single slash, no backslash, no scheme. */
+function isGatewayPath(path: string): boolean {
+  return /^\/(?!\/)/.test(path) && !path.includes('\\') && !path.includes('://');
+}
+
+function defaultCorrelationId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 /** The common envelope `{error, message, traceId}`; anything else (HTML from a proxy, empty body) is tolerated. */
@@ -53,12 +75,20 @@ async function readEnvelope(response: Response): Promise<{ error?: string; trace
 export function createApiClient(options: ClientOptions): ApiClient {
   const send = options.fetch ?? globalThis.fetch.bind(globalThis);
   const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
-  const newId = options.newCorrelationId ?? (() => crypto.randomUUID());
+  const newId = options.newCorrelationId ?? defaultCorrelationId;
 
   return {
     async request<T>(path: string, init: RequestOptions = {}): Promise<T> {
       const correlationId = newId();
-      const headers: Record<string, string> = { Accept: 'application/json', ...init.headers };
+      const callerSignal = init.signal;
+      if (!isGatewayPath(path)) throw failure(undefined, 'INVALID_PATH', correlationId);
+      if (callerSignal?.aborted) throw failure(undefined, 'ABORTED', correlationId);
+
+      const method = (init.method ?? 'GET').toUpperCase();
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      for (const [name, value] of Object.entries(init.headers ?? {})) {
+        if (!RESERVED_HEADERS.has(name.toLowerCase())) headers[name] = value;
+      }
       const token = options.token();
       if (token) headers['Authorization'] = `Bearer ${token}`;
       headers['X-Correlation-Id'] = correlationId;
@@ -70,20 +100,27 @@ export function createApiClient(options: ClientOptions): ApiClient {
         timedOut = true;
         controller.abort();
       }, timeoutMs);
-      init.signal?.addEventListener('abort', () => controller.abort(), { once: true });
+      const onCallerAbort = () => controller.abort();
+      callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
 
       try {
         const response = await send(options.baseUrl + path, {
-          method: init.method ?? 'GET',
+          method,
           headers,
           body: init.body === undefined ? undefined : JSON.stringify(init.body),
           signal: controller.signal,
         });
         if (response.ok) {
           const text = await response.text();
-          return (text ? JSON.parse(text) : undefined) as T;
+          try {
+            return (text ? JSON.parse(text) : undefined) as T;
+          } catch {
+            throw failure(response.status, 'INVALID_RESPONSE', correlationId);
+          }
         }
-        if (response.status === 401) options.onUnauthorized(token);
+        if (response.status === 401 && `${method} ${path.split('?')[0]}` !== KEEPS_SESSION_ON_401) {
+          options.onUnauthorized(token);
+        }
         const envelope = await readEnvelope(response);
         throw failure(
           response.status,
@@ -92,14 +129,11 @@ export function createApiClient(options: ClientOptions): ApiClient {
         );
       } catch (err) {
         if (isApiError(err)) throw err;
-        throw failure(undefined, timedOut ? 'TIMEOUT' : 'NETWORK_ERROR', correlationId);
+        throw failure(undefined, timedOut ? 'TIMEOUT' : callerSignal?.aborted ? 'ABORTED' : 'NETWORK_ERROR', correlationId);
       } finally {
         clearTimeout(timer);
+        callerSignal?.removeEventListener('abort', onCallerAbort);
       }
     },
   };
-}
-
-function isApiError(value: unknown): value is ApiError {
-  return typeof value === 'object' && value !== null && 'traceId' in value && 'code' in value;
 }

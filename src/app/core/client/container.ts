@@ -28,9 +28,12 @@ export function createContainerClient(options: { baseUrl: string; fetch?: typeof
       const apiClient = createApiClient({
         ...options,
         token: () => session.token,
-        onUnauthorized: () => session.close(),
+        // Only the token this request used may end the session: a newer sign-in must survive an older 401.
+        onUnauthorized: (used) => {
+          if (used !== null && used === session.token) session.close();
+        },
       });
-      return { apiClient, session };
+      return identifier === undefined ? { apiClient, session } : { apiClient, session, identifier };
     },
   };
 }

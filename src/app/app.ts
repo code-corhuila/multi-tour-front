@@ -16,8 +16,8 @@ import { loadManifest } from './core/federation/remote-loader';
 })
 export class App {
   protected readonly title = 'Multitour';
-  // Tenant routing arrives in T-05; until then every remote gets the platform (tenant-less) session.
-  protected readonly props = createContainerClient({ baseUrl: gatewayBaseUrl() }).propsFor('platform');
+  // Tenant routing arrives in T-05; until then every remote gets the platform session.
+  protected readonly props = createContainerClient({ baseUrl: gatewayBaseUrl() }).propsFor();
   protected readonly remotes = signal<[string, string][]>([]);
 
   constructor() {

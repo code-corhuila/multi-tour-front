@@ -4,23 +4,51 @@ export type Refresher = (refreshToken: string) => Promise<SessionAnswer>;
 
 /** The access token lasts 15 minutes; it is renewed this long before it ends. */
 export const RENEW_LEAD_MS = 60_000;
+/** A renewal is never scheduled sooner than this, so a short or odd `expiresIn` cannot loop refreshes. */
+export const MIN_RENEW_MS = 5_000;
+/** `setTimeout` fires at once for delays above this. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
 
-function rolesOf(accessToken: string): string[] {
+type Access = 'password-change' | 'restricted';
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/**
+ * Reads the token payload (base64url, UTF-8). Roles and `access` are only hints to choose a screen:
+ * every service validates RS256, `exp` and `sub` by itself, so nothing here is a security decision.
+ */
+function payloadOf(accessToken: string): Record<string, unknown> {
   try {
-    const payload = accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const roles: unknown = JSON.parse(atob(payload)).roles;
-    return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === 'string') : [];
+    const base64 = accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    const text = new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+    const payload: unknown = JSON.parse(text);
+    return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
   } catch {
-    return [];
+    return {};
   }
+}
+
+/** An absent claim is a normal access; a present one that is not understood is treated as the most limited. */
+function accessOf(payload: Record<string, unknown>): Access | undefined {
+  const claim = payload['access'];
+  if (claim === undefined) return undefined;
+  return claim === 'password-change' ? claim : 'restricted';
+}
+
+function rolesOf(payload: Record<string, unknown>): string[] {
+  const roles = payload['roles'];
+  return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === 'string') : [];
 }
 
 function asAnswer(value: unknown): SessionAnswer {
   const a = value as Partial<SessionAnswer> | null;
-  if (typeof a?.accessToken !== 'string' || typeof a.expiresIn !== 'number') {
-    throw new Error('session answer needs accessToken and expiresIn');
+  if (typeof a?.accessToken !== 'string' || a.accessToken === '') throw new Error('session answer needs an accessToken');
+  if (typeof a.expiresIn !== 'number' || !Number.isFinite(a.expiresIn) || a.expiresIn <= 0) {
+    throw new Error('session answer needs a positive expiresIn');
   }
-  return { accessToken: a.accessToken, refreshToken: a.refreshToken, expiresIn: a.expiresIn };
+  const refreshToken = typeof a.refreshToken === 'string' && a.refreshToken !== '' ? a.refreshToken : undefined;
+  return { accessToken: a.accessToken, refreshToken, expiresIn: a.expiresIn };
 }
 
 /**
@@ -30,34 +58,47 @@ function asAnswer(value: unknown): SessionAnswer {
 export class TenantSession implements Session {
   token: string | null = null;
   roles: string[] = [];
-  access: 'password-change' | 'restricted' | undefined;
+  access: Access | undefined;
   private refreshToken: string | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** Bumped by every open and close, so a renewal that finishes after either one is dropped. */
+  private generation = 0;
 
   constructor(private readonly refresh: Refresher) {}
 
   open(answer: unknown): void {
     const { accessToken, refreshToken, expiresIn } = asAnswer(answer);
-    clearTimeout(this.timer);
+    const payload = payloadOf(accessToken);
+    this.reset();
     this.token = accessToken;
     this.refreshToken = refreshToken;
-    this.roles = rolesOf(accessToken);
-    this.timer = setTimeout(() => void this.renew(), Math.max(expiresIn * 1000 - RENEW_LEAD_MS, 0));
+    this.roles = rolesOf(payload);
+    this.access = accessOf(payload);
+    this.timer = refreshToken
+      ? setTimeout(() => void this.renew(), clamp(expiresIn * 1000 - RENEW_LEAD_MS, MIN_RENEW_MS, MAX_TIMER_MS))
+      : setTimeout(() => this.close(), clamp(expiresIn * 1000, 0, MAX_TIMER_MS));
   }
 
   close(): void {
+    this.reset();
+  }
+
+  private reset(): void {
+    this.generation++;
     clearTimeout(this.timer);
     this.token = null;
     this.refreshToken = undefined;
     this.roles = [];
+    this.access = undefined;
   }
 
   private async renew(): Promise<void> {
-    if (!this.refreshToken) return this.close();
+    const generation = this.generation;
     try {
-      this.open(await this.refresh(this.refreshToken));
+      const next = await this.refresh(this.refreshToken as string);
+      if (generation === this.generation) this.open(next);
     } catch {
-      this.close();
+      if (generation === this.generation) this.close();
     }
   }
 }
@@ -68,12 +109,13 @@ export class SessionStore {
 
   constructor(private readonly refresh: Refresher) {}
 
-  /** No identifier means the platform session. */
+  /** No identifier means the platform session; the key prefixes keep a tenant named `platform` apart from it. */
   of(identifier?: string): TenantSession {
-    let session = this.sessions.get(identifier ?? '');
+    const key = identifier === undefined ? 'platform' : `tenant:${identifier}`;
+    let session = this.sessions.get(key);
     if (!session) {
       session = new TenantSession(this.refresh);
-      this.sessions.set(identifier ?? '', session);
+      this.sessions.set(key, session);
     }
     return session;
   }
