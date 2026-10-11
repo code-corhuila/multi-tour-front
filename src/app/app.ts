@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { createContainerClient, gatewayBaseUrl } from './core/client/container';
 import { RemoteHostComponent } from './core/federation/remote-host.component';
 import { loadManifest } from './core/federation/remote-loader';
 
@@ -9,12 +10,14 @@ import { loadManifest } from './core/federation/remote-loader';
   template: `
     <h1>{{ title }}</h1>
     @for (remote of remotes(); track remote[0]) {
-      <app-remote-host [name]="remote[0]" [url]="remote[1]" />
+      <app-remote-host [name]="remote[0]" [url]="remote[1]" [props]="props" />
     }
   `,
 })
 export class App {
   protected readonly title = 'Multitour';
+  // Tenant routing arrives in T-05; until then every remote gets the platform session.
+  protected readonly props = createContainerClient({ baseUrl: gatewayBaseUrl() }).propsFor();
   protected readonly remotes = signal<[string, string][]>([]);
 
   constructor() {
