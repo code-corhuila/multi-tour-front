@@ -16,7 +16,11 @@
             "outputPath": "dist/shell",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "tsConfig": "tsconfig.app.json"
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              { "glob": "**/*", "input": "public" },
+              { "glob": "*.js", "input": "e2e/stubs", "output": "stubs" }
+            ]
           },
           "configurations": {
             "production": { "outputHashing": "all" },

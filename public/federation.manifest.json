@@ -1,0 +1,4 @@
+{
+  "stub-react": "stubs/react-remote.js",
+  "stub-angular": "stubs/angular-remote.js"
+}
