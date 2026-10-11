@@ -83,7 +83,7 @@ export function createApiClient(options: ClientOptions): ApiClient {
           const text = await response.text();
           return (text ? JSON.parse(text) : undefined) as T;
         }
-        if (response.status === 401) options.onUnauthorized();
+        if (response.status === 401) options.onUnauthorized(token);
         const envelope = await readEnvelope(response);
         throw failure(
           response.status,
