@@ -3,7 +3,7 @@
 ## What it is
 
 The Angular 21 container (shell) of the Multitour interface. It will own the HTTP client and the
-session, and mount each domain portal. Today it is an empty shell that builds and tests in the CI.
+session, and mount each domain portal. It routes / (home), /platform, /t/<identifier> (resolves the tenant's public profile first) and ** (the common 404), guards reas/<remote> and mounts each portal from ederation.manifest.json.
 
 ## How to start it
 
@@ -29,5 +29,4 @@ The CI runs `npm ci`, `npm run build` and `npm test` on every pull request to `d
 
 ## What is missing
 
-Native Federation, the neutral HTTP client, the session, routing, the tenant link, the 404 page,
-the remote-unavailable area and the image. They come in the next tasks of the piece.
+The image, the security headers and the build checks (task T-06).

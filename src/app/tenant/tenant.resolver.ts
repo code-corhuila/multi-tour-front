@@ -1,5 +1,8 @@
+import { inject } from '@angular/core';
 import { ResolveFn } from '@angular/router';
-import { ApiClient } from '../core/client/types';
+import { messageFor } from '../core/client/api-client';
+import { CONTAINER_CLIENT } from '../core/client/container-client.token';
+import { ApiClient, ApiError } from '../core/client/types';
 
 export interface TenantProfile {
   identifier: string;
@@ -12,9 +15,22 @@ export type TenantLookup =
   | { state: 'unknown' }
   | { state: 'error'; message: string };
 
-/** Skeleton: answers `unknown` until the lookup is written. */
-export async function lookupTenant(_client: ApiClient, _identifier: string): Promise<TenantLookup> {
-  return { state: 'unknown' };
+/** Same shape the public route accepts; anything else is not asked (the gateway would answer 401 and end a session). */
+const IDENTIFIER = /^[a-z0-9-]{1,40}$/;
+
+export async function lookupTenant(client: ApiClient, identifier: string): Promise<TenantLookup> {
+  if (!IDENTIFIER.test(identifier)) return { state: 'unknown' };
+  try {
+    const profile = await client.request<TenantProfile>(`/api/v1/identity-audit/public/tenants/${identifier}`);
+    return { state: profile.tenantStatus === 'ACTIVE' ? 'active' : 'inactive', profile };
+  } catch (err) {
+    const failure = err as Partial<ApiError>;
+    if (failure.status === 404 || failure.status === 401) return { state: 'unknown' };
+    return { state: 'error', message: failure.message ?? messageFor(undefined, '') };
+  }
 }
 
-export const tenantResolver: ResolveFn<TenantLookup> = () => ({ state: 'unknown' });
+export const tenantResolver: ResolveFn<TenantLookup> = (route) => {
+  const identifier = route.paramMap.get('identifier') ?? '';
+  return lookupTenant(inject(CONTAINER_CLIENT).propsFor(identifier).apiClient, identifier);
+};
