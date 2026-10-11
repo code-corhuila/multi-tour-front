@@ -1,25 +1,33 @@
 # multi-tour-front
 
-> Front-end shell: packages the domain UIs
+## What it is
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+The Angular 21 container (shell) of the Multitour interface. It will own the HTTP client and the
+session, and mount each domain portal. Today it is an empty shell that builds and tests in the CI.
 
-## Branching
+## How to start it
 
-Three permanent branches. **None of them accepts a direct commit** — you enter through a child
-branch and leave through a Pull Request.
+Node 22 LTS or 24. Copy `.env.example` to `.env`, then:
 
-```
-develop  <--PR--  feat/... fix/... chore/...
-qa       <--PR--  qa/...
-main     <--PR--  release/...  hotfix/...
+```bash
+npm ci
+npm start    # http://localhost:4200
 ```
 
-Promotion happens **by re-application** (`git cherry-pick -x`), never by merging one permanent
-branch into another: `merge develop -> qa` and `merge qa -> main` do not exist in this model.
+## Where the data is
 
-`main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
-rule.
+Nowhere: this repository holds no data. It only calls the API through the gateway.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+## How to test it
+
+```bash
+npm test     # Vitest through the Angular unit-test builder
+npm run build
+```
+
+The CI runs `npm ci`, `npm run build` and `npm test` on every pull request to `develop` and `qa`.
+
+## What is missing
+
+Native Federation, the neutral HTTP client, the session, routing, the tenant link, the 404 page,
+the remote-unavailable area and the image. They come in the next tasks of the piece.
