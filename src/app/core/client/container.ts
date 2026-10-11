@@ -7,7 +7,7 @@ export const REFRESH_PATH = '/api/v1/security/public/sessions/refresh';
 export interface ContainerClient {
   store: SessionStore;
   /** What a portal receives when it is mounted: the client and the session of that tenant (`platform` has none). */
-  propsFor(identifier: string): MountProps;
+  propsFor(identifier?: string): MountProps;
 }
 
 /** The gateway URL is read here only: a runtime global set by the page, else the page's own origin (the gateway serves it). */
@@ -23,7 +23,7 @@ export function createContainerClient(options: { baseUrl: string; fetch?: typeof
   );
   return {
     store,
-    propsFor(identifier) {
+    propsFor(identifier?: string) {
       const session = store.of(identifier);
       const apiClient = createApiClient({
         ...options,

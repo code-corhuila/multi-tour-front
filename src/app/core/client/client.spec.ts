@@ -1,22 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { messageFor } from './api-client';
 import { createContainerClient, REFRESH_PATH } from './container';
-import { SessionAnswer } from './types';
+import { answer, json, jwt } from './test-helpers';
 
 const BASE = 'https://gateway.test';
-
-function jwt(roles: string[]): string {
-  const payload = btoa(JSON.stringify({ sub: 'u1', roles })).replace(/=+$/, '');
-  return `h.${payload}.s`;
-}
-
-function answer(token = jwt(['ADMIN']), refreshToken = 'r'.repeat(24)): SessionAnswer {
-  return { accessToken: token, refreshToken, expiresIn: 900 };
-}
-
-function json(status: number, body: unknown, headers: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
-}
 
 function headersOf(fetchMock: ReturnType<typeof vi.fn>, call: number): Record<string, string> {
   return fetchMock.mock.calls[call][1].headers;

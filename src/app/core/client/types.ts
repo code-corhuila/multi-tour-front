@@ -13,11 +13,15 @@ export interface ApiClient {
 
 export interface Session {
   readonly roles: string[];
+  /** Set when the token is a temporary or restricted credential: the portal then routes to the matching screen. */
+  readonly access?: 'password-change' | 'restricted';
   open(answer: unknown): void;
   close(): void;
 }
 
 export interface MountProps {
+  /** The tenant identifier of the link; omitted for the platform. */
+  identifier?: string;
   apiClient: ApiClient;
   session: Session;
 }

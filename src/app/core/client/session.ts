@@ -30,6 +30,7 @@ function asAnswer(value: unknown): SessionAnswer {
 export class TenantSession implements Session {
   token: string | null = null;
   roles: string[] = [];
+  access: 'password-change' | 'restricted' | undefined;
   private refreshToken: string | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -67,11 +68,12 @@ export class SessionStore {
 
   constructor(private readonly refresh: Refresher) {}
 
-  of(identifier: string): TenantSession {
-    let session = this.sessions.get(identifier);
+  /** No identifier means the platform session. */
+  of(identifier?: string): TenantSession {
+    let session = this.sessions.get(identifier ?? '');
     if (!session) {
       session = new TenantSession(this.refresh);
-      this.sessions.set(identifier, session);
+      this.sessions.set(identifier ?? '', session);
     }
     return session;
   }

@@ -5,7 +5,8 @@ export const REQUEST_TIMEOUT_MS = 10_000;
 export interface ClientOptions {
   baseUrl: string;
   token: () => string | null;
-  onUnauthorized: () => void;
+  /** Called with the token the failed request used (null if none). */
+  onUnauthorized: (usedToken: string | null) => void;
   fetch?: typeof fetch;
   timeoutMs?: number;
   newCorrelationId?: () => string;

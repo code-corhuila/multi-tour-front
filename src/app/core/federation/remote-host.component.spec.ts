@@ -4,7 +4,7 @@ import { MountProps } from '../client/types';
 import { RemoteHostComponent } from './remote-host.component';
 import { loadManifest, mountRemote, REMOTE_IMPORTER } from './remote-loader';
 
-const PROPS: MountProps = { apiClient: { request: vi.fn() }, session: { roles: [], open: vi.fn(), close: vi.fn() } };
+const PROPS: MountProps = { identifier: 'acme', apiClient: { request: vi.fn() }, session: { roles: [], open: vi.fn(), close: vi.fn() } };
 
 function createHost(importer: ReturnType<typeof vi.fn>) {
   TestBed.configureTestingModule({ providers: [{ provide: REMOTE_IMPORTER, useValue: importer }] });
