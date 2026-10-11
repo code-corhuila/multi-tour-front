@@ -1,11 +1,9 @@
 import { InjectionToken } from '@angular/core';
-
-/** What the container hands to a remote. The real client and session arrive in T-04. */
-export type RemoteProps = Record<string, unknown>;
+import { MountProps } from '../client/types';
 
 /** The contract of ADR-006 F4: a remote module exports `mount` and returns its cleanup. */
 export interface RemoteModule {
-  mount(element: HTMLElement, props: RemoteProps): void | (() => void);
+  mount(element: HTMLElement, props: MountProps): void | (() => void);
 }
 
 export type RemoteImporter = (url: string) => Promise<unknown>;
@@ -48,7 +46,7 @@ export async function mountRemote(
   importer: RemoteImporter,
   url: string,
   element: HTMLElement,
-  props: RemoteProps,
+  props: MountProps,
 ): Promise<() => void> {
   const remote = (await importer(resolveRemoteUrl(url))) as Partial<RemoteModule>;
   if (typeof remote.mount !== 'function') throw new Error(`remote ${url} does not export mount`);

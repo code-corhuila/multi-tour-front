@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
+import { MountProps } from '../client/types';
 import { RemoteHostComponent } from './remote-host.component';
 import { loadManifest, mountRemote, REMOTE_IMPORTER } from './remote-loader';
+
+const PROPS: MountProps = { apiClient: { request: vi.fn() }, session: { roles: [], open: vi.fn(), close: vi.fn() } };
 
 function createHost(importer: ReturnType<typeof vi.fn>) {
   TestBed.configureTestingModule({ providers: [{ provide: REMOTE_IMPORTER, useValue: importer }] });
   const fixture = TestBed.createComponent(RemoteHostComponent);
   fixture.componentRef.setInput('name', 'Stub');
   fixture.componentRef.setInput('url', '/stubs/x.js');
-  fixture.componentRef.setInput('props', { answer: 42 });
+  fixture.componentRef.setInput('props', PROPS);
   fixture.detectChanges();
   return fixture;
 }
@@ -20,7 +23,7 @@ describe('RemoteHostComponent', () => {
     await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
     const [element, props] = mount.mock.calls[0];
     expect(element).toBe(fixture.nativeElement.querySelector('[data-remote]'));
-    expect(props).toEqual({ answer: 42 });
+    expect(props).toBe(PROPS);
   });
 
   it('shows the unavailable area instead of throwing when the import fails', async () => {
@@ -77,14 +80,14 @@ describe('manifest origin check', () => {
   for (const [kind, url] of Object.entries(unsafe)) {
     it(`mountRemote rejects a ${kind} url without importing it`, async () => {
       const importer = vi.fn();
-      await expect(mountRemote(importer, url as string, document.createElement('div'), {})).rejects.toThrow();
+      await expect(mountRemote(importer, url as string, document.createElement('div'), PROPS)).rejects.toThrow();
       expect(importer).not.toHaveBeenCalled();
     });
   }
 
   it('imports a relative url resolved against the document base', async () => {
     const importer = vi.fn().mockResolvedValue({ mount: vi.fn() });
-    await mountRemote(importer, 'stubs/ok.js', document.createElement('div'), {});
+    await mountRemote(importer, 'stubs/ok.js', document.createElement('div'), PROPS);
     expect(importer).toHaveBeenCalledWith(new URL('stubs/ok.js', document.baseURI).href);
   });
 });
