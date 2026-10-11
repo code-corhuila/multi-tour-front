@@ -5,7 +5,7 @@ import { answer, json, jwt } from './test-helpers';
 const BASE = 'https://gateway.test';
 
 function setup(fetchMock: ReturnType<typeof vi.fn>, identifier = 'acme') {
-  const container = createContainerClient({ baseUrl: BASE, fetch: fetchMock });
+  const container = createContainerClient({ baseUrl: BASE, fetch: fetchMock as unknown as typeof fetch });
   return { ...container, props: container.propsFor(identifier) };
 }
 
@@ -16,13 +16,13 @@ function deferred<T>() {
 }
 
 describe('requests', () => {
-  it('U·identifier_is_handed_to_the_portal_and_omitted_for_the_platform', () => {
+  it('UÂ·identifier_is_handed_to_the_portal_and_omitted_for_the_platform', () => {
     const { propsFor } = setup(vi.fn());
     expect(propsFor('acme').identifier).toBe('acme');
     expect('identifier' in propsFor()).toBe(false);
   });
 
-  it('U·request_path_must_stay_on_the_gateway', async () => {
+  it('UÂ·request_path_must_stay_on_the_gateway', async () => {
     const fetchMock = vi.fn();
     const { props } = setup(fetchMock);
     for (const path of ['//evil.test/x', 'https://evil.test/x', 'api/v1/x', '/a\\b', '/go?u=http://evil.test']) {
@@ -31,7 +31,7 @@ describe('requests', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('U·401_of_an_older_token_does_not_close_a_newer_session', async () => {
+  it('UÂ·401_of_an_older_token_does_not_close_a_newer_session', async () => {
     const pending = deferred<Response>();
     const { props, store } = setup(vi.fn().mockReturnValue(pending.promise));
     props.session.open(answer(jwt(['OLD'])));
@@ -45,7 +45,7 @@ describe('requests', () => {
     props.session.close();
   });
 
-  it('U·401_on_change_own_password_does_not_close_the_session', async () => {
+  it('UÂ·401_on_change_own_password_does_not_close_the_session', async () => {
     const fetchMock = vi.fn().mockResolvedValue(json(401, { error: 'UNAUTHORIZED', message: 'x', traceId: 't' }));
     const { props, store } = setup(fetchMock);
     props.session.open(answer());
@@ -58,7 +58,7 @@ describe('requests', () => {
     props.session.close();
   });
 
-  it('U·an_aborted_signal_rejects_with_ABORTED_without_calling_fetch', async () => {
+  it('UÂ·an_aborted_signal_rejects_with_ABORTED_without_calling_fetch', async () => {
     const fetchMock = vi.fn();
     const { props } = setup(fetchMock);
     const controller = new AbortController();
@@ -68,7 +68,7 @@ describe('requests', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('U·abort_in_flight_is_ABORTED_and_the_listener_is_removed', async () => {
+  it('UÂ·abort_in_flight_is_ABORTED_and_the_listener_is_removed', async () => {
     const fetchMock = vi.fn().mockImplementation(
       (_url: string, init: RequestInit) =>
         new Promise((_resolve, reject) =>
@@ -86,7 +86,7 @@ describe('requests', () => {
     expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
   });
 
-  it('U·caller_headers_cannot_replace_authorization_or_correlation', async () => {
+  it('UÂ·caller_headers_cannot_replace_authorization_or_correlation', async () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, {})));
     const { props } = setup(fetchMock);
     props.session.open(answer(jwt([])));
@@ -103,7 +103,7 @@ describe('requests', () => {
     props.session.close();
   });
 
-  it('U·a_2xx_with_invalid_json_is_INVALID_RESPONSE', async () => {
+  it('UÂ·a_2xx_with_invalid_json_is_INVALID_RESPONSE', async () => {
     const { props } = setup(vi.fn().mockResolvedValue(new Response('<html>', { status: 200 })));
     await expect(props.apiClient.request('/x')).rejects.toMatchObject({ status: 200, code: 'INVALID_RESPONSE' });
   });
