@@ -26,11 +26,19 @@ export interface MountProps {
   session: Session;
 }
 
-/** What `request` rejects with: the common envelope `{error, message, traceId}` plus the HTTP status. */
+/** One field-level problem of the envelope's `details`, e.g. `{field: 'email', message: 'already in use'}`. */
+export interface ErrorDetail {
+  field: string;
+  message: string;
+}
+
+/** What `request` rejects with: the common envelope `{error, message, details?, traceId}` plus the HTTP status. */
 export interface ApiError {
   status?: number;
   code: string;
   message: string;
+  /** Present only when the server sent well-formed details. */
+  details?: ErrorDetail[];
   traceId: string;
 }
 

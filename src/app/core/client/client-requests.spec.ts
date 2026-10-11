@@ -103,6 +103,23 @@ describe('requests', () => {
     props.session.close();
   });
 
+  it('UÂ·error_details_reach_the_portal_and_stay_absent_without_them', async () => {
+    const details = [{ field: 'email', message: 'already in use' }];
+    const withDetails = setup(vi.fn().mockResolvedValue(json(422, { error: 'BUSINESS_RULE_VIOLATION', message: 'x', details, traceId: 't' })));
+    await expect(withDetails.props.apiClient.request('/x')).rejects.toMatchObject({ status: 422, details });
+
+    const without = setup(vi.fn().mockResolvedValue(json(422, { error: 'BUSINESS_RULE_VIOLATION', message: 'x', traceId: 't' })));
+    const error = await without.props.apiClient.request('/x').catch((e: unknown) => e);
+    expect('details' in (error as object)).toBe(false);
+  });
+
+  it('UÂ·malformed_error_details_are_dropped', async () => {
+    const bad = { error: 'VALIDATION_ERROR', message: 'x', details: [{ field: 1 }, 'text'], traceId: 't' };
+    const { props } = setup(vi.fn().mockResolvedValue(json(400, bad)));
+    const error = await props.apiClient.request('/x').catch((e: unknown) => e);
+    expect('details' in (error as object)).toBe(false);
+  });
+
   it('UÂ·a_2xx_with_invalid_json_is_INVALID_RESPONSE', async () => {
     const { props } = setup(vi.fn().mockResolvedValue(new Response('<html>', { status: 200 })));
     await expect(props.apiClient.request('/x')).rejects.toMatchObject({ status: 200, code: 'INVALID_RESPONSE' });
