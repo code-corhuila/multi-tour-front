@@ -1,0 +1,6 @@
+{
+  "identity-audit-portal": "stubs/identity-audit-portal.js",
+  "stub-react": "stubs/react-remote.js",
+  "stub-angular": "stubs/angular-remote.js",
+  "stub-down": "stubs/does-not-exist.js"
+}

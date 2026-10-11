@@ -13,6 +13,13 @@ export const REMOTE_IMPORTER = new InjectionToken<RemoteImporter>('REMOTE_IMPORT
   factory: () => (url) => import(/* @vite-ignore */ url),
 });
 
+export type ManifestLoader = () => Promise<Record<string, string>>;
+
+/** Replaceable in tests; the default fetches the manifest without cache. */
+export const MANIFEST_LOADER = new InjectionToken<ManifestLoader>('MANIFEST_LOADER', {
+  factory: () => () => loadManifest(),
+});
+
 /** Only same-origin modules may be imported. Returns the absolute url (relative ones resolve against the document). */
 export function resolveRemoteUrl(value: unknown): string {
   if (typeof value !== 'string') throw new Error('remote url must be a string');
