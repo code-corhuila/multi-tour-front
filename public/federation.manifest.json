@@ -1,4 +1,3 @@
 {
-  "stub-react": "stubs/react-remote.js",
-  "stub-angular": "stubs/angular-remote.js"
+  "identity-audit-portal": "portals/identity-audit-portal.js"
 }

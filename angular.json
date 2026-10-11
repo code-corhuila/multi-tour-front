@@ -16,15 +16,25 @@
             "outputPath": "dist/shell",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "tsConfig": "tsconfig.app.json",
-            "assets": [
-              { "glob": "**/*", "input": "public" },
-              { "glob": "*.js", "input": "e2e/stubs", "output": "stubs" }
-            ]
+            "tsConfig": "tsconfig.app.json"
           },
           "configurations": {
-            "production": { "outputHashing": "all" },
-            "development": { "optimization": false, "extractLicenses": false, "sourceMap": true }
+            "production": {
+              "outputHashing": "all",
+              "assets": [{ "glob": "**/*", "input": "public" }],
+              "fileReplacements": [
+                { "replace": "src/app/core/auth/dev-routes.ts", "with": "src/app/core/auth/dev-routes.production.ts" }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                { "glob": "federation.manifest.json", "input": "e2e/manifest" },
+                { "glob": "*.js", "input": "e2e/stubs", "output": "stubs" }
+              ]
+            }
           },
           "defaultConfiguration": "production"
         },
