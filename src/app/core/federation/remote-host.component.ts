@@ -11,7 +11,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { RemoteUnavailableComponent } from '../errors/remote-unavailable.component';
-import { mountRemote, REMOTE_IMPORTER, RemoteProps } from './remote-loader';
+import { MountProps } from '../client/types';
+import { mountRemote, REMOTE_IMPORTER } from './remote-loader';
 
 @Component({
   selector: 'app-remote-host',
@@ -28,7 +29,7 @@ import { mountRemote, REMOTE_IMPORTER, RemoteProps } from './remote-loader';
 export class RemoteHostComponent implements OnDestroy {
   readonly name = input.required<string>();
   readonly url = input.required<string>();
-  readonly props = input<RemoteProps>({});
+  readonly props = input.required<MountProps>();
 
   protected readonly failed = signal(false);
   private readonly importer = inject(REMOTE_IMPORTER);
