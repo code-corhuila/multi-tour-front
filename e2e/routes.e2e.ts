@@ -20,7 +20,7 @@ async function signInThroughThePortal(page: Page) {
 
 test('E2E· protected_route_goes_to_sign_in_and_back', async ({ page }) => {
   await page.goto('/t/acme/areas/stub-react');
-  await expect(page).toHaveURL(/\/t\/acme\/sign-in\?returnUrl=%2Ft%2Facme%2Fareas%2Fstub-react/);
+  await expect(page).toHaveURL(/\/t\/acme\/ingresar\?returnUrl=%2Ft%2Facme%2Fareas%2Fstub-react/);
   await signInThroughThePortal(page);
   await expect(page).toHaveURL(/\/t\/acme\/areas\/stub-react$/);
   await expect(page.getByText('Stub React remote')).toBeVisible();
@@ -46,4 +46,9 @@ test('E2E home_shows_the_company_field_and_goes_to_the_tenant_link', async ({ pa
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page).toHaveURL(/\/t\/acme/);
   await expect(page.getByRole('heading', { name: 'Acme Tours' })).toHaveCount(0);
+});
+test('E2E old_sign_in_path_is_an_alias_of_ingresar_and_keeps_the_return_url', async ({ page }) => {
+  await page.goto('/t/acme/sign-in?returnUrl=%2Ft%2Facme%2Fareas%2Fstub-react');
+  await expect(page).toHaveURL(/\/t\/acme\/ingresar\?returnUrl=%2Ft%2Facme%2Fareas%2Fstub-react$/);
+  await expect(page.getByText('Stub sign-in')).toBeVisible();
 });
