@@ -3,7 +3,8 @@ import { createContainerClient } from './container';
 import { answer, json, jwt } from './test-helpers';
 
 const BASE = 'https://gateway.test';
-const make = (fetchMock = vi.fn().mockResolvedValue(json(200, {}))) =>
+// A fresh Response per call: a body can be read only once.
+const make = (fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, {})))) =>
   createContainerClient({ baseUrl: BASE, fetch: fetchMock as unknown as typeof fetch });
 
 describe('mount scope', () => {
@@ -24,7 +25,7 @@ describe('mount scope', () => {
   });
 
   it('U-general_client_carries_the_token_it_opened_and_a_new_mount_of_the_tenant_shares_it', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(json(200, {}));
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, {})));
     const { propsFor, store } = make(fetchMock);
     const general = propsFor(undefined, 'general');
     await general.apiClient.request('/x');
