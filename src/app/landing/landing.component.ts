@@ -22,8 +22,12 @@ export class LandingComponent {
   /** The company of the link, from the profile the resolver loaded; generic when it has no commercial name. */
   protected readonly company = this.commercialName();
 
-  protected readonly signIn = `/t/${this.identifier}/ingresar`;
-  protected readonly operatorQuery = { tab: 'operador' };
+  /** No identifier: the root welcome, whose ways in lead to the company selector and the platform. */
+  private readonly generic = this.identifier === '';
+  protected readonly home = this.generic ? '/' : `/t/${this.identifier}`;
+  protected readonly signIn = this.generic ? '/ingresar' : `/t/${this.identifier}/ingresar`;
+  protected readonly panel = this.generic ? '/platform' : this.signIn;
+  protected readonly operatorQuery = this.generic ? null : { tab: 'operador' };
 
   constructor() {
     const title = inject(Title);

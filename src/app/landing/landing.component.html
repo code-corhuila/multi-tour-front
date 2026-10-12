@@ -2,7 +2,7 @@
 
 <header class="mth-header">
   <div class="mt-container mth-header-inner">
-    <a class="mth-brand" [routerLink]="'/t/' + identifier">Multi Tour</a>
+    <a class="mth-brand" [routerLink]="home">Multi Tour</a>
     <div class="mth-header-actions">
       <a class="mth-link-ghost" [routerLink]="signIn" [queryParams]="operatorQuery">Equipo del operador</a>
       <a class="mth-btn-login" [routerLink]="signIn">Ingresar</a>
@@ -118,7 +118,7 @@
         <span class="mth-empresarial-eyebrow">Equipo del operador</span>
         <h2 id="business-title" class="mth-empresarial-title">¿Formas parte del equipo de un operador?</h2>
         <p class="mth-empresarial-desc">Accede al espacio de gestión de tu empresa.</p>
-        <a class="mth-btn-empresarial" [routerLink]="signIn" [queryParams]="operatorQuery">Acceder al equipo del operador</a>
+        <a class="mth-btn-empresarial" [routerLink]="panel" [queryParams]="operatorQuery">Acceder al equipo del operador</a>
       </div>
     </div>
   </section>
