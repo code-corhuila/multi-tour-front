@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
-import { HomeComponent } from './home.component';
+import { CompanySelectorComponent } from './company-selector.component';
 
 function setup() {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-  const fixture = TestBed.createComponent(HomeComponent);
+  const fixture = TestBed.createComponent(CompanySelectorComponent);
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
   const input = () => el.querySelector<HTMLInputElement>('input')!;
@@ -23,8 +23,8 @@ function setup() {
   return { el, navigate, input, button, type, submit };
 }
 
-describe('HomeComponent', () => {
-  it('U-home_renders_the_company_field_and_the_platform_link', () => {
+describe('CompanySelectorComponent', () => {
+  it('U-selector_renders_the_company_field_and_the_platform_link', () => {
     const { el, input } = setup();
     expect(el.textContent).toContain('Ingresa con el enlace de tu empresa.');
     const label = el.querySelector<HTMLLabelElement>(`label[for="${input().id}"]`);
@@ -33,12 +33,16 @@ describe('HomeComponent', () => {
     expect(link?.textContent).toContain('Administración de la plataforma');
   });
 
-  it('U-home_draws_its_own_quiet_wordmark_since_the_shell_has_no_header', () => {
+  it('U-selector_uses_the_split_layout_of_the_sign_in_with_the_photo_and_a_way_back', () => {
     const { el } = setup();
-    expect(el.querySelector('.wordmark')?.textContent?.trim()).toBe('Multi Tour');
+    expect(el.querySelector('img.mth-login-visual-img')?.getAttribute('src')).toBe('/assets/mountain-hero.jpg');
+    expect(el.querySelectorAll('h1').length).toBe(1);
+    const back = el.querySelector<HTMLAnchorElement>('a.mth-login-back');
+    expect(back?.textContent).toContain('Volver al inicio');
+    expect(back?.getAttribute('href')).toBe('/');
   });
 
-  it('U-home_button_is_disabled_while_the_field_is_empty', () => {
+  it('U-selector_button_is_disabled_while_the_field_is_empty', () => {
     const { button, type } = setup();
     expect(button().disabled).toBe(true);
     type('acme');
@@ -47,14 +51,14 @@ describe('HomeComponent', () => {
     expect(button().disabled).toBe(true);
   });
 
-  it('U-home_navigates_to_the_tenant_link_on_submit', () => {
+  it('U-selector_navigates_to_the_tenant_link_on_submit', () => {
     const { navigate, type, submit } = setup();
     type(' Acme-Tours ');
     submit();
     expect(navigate).toHaveBeenCalledWith('/t/acme-tours');
   });
 
-  it('U-home_rejects_an_invalid_identifier_next_to_the_field_without_navigating', () => {
+  it('U-selector_rejects_an_invalid_identifier_next_to_the_field_without_navigating', () => {
     const { el, input, navigate, type, submit } = setup();
     for (const bad of ['ab', 'a'.repeat(41), 'acme tours', '-acme', 'acme-', 'ac/me', 'acme--x']) {
       type(bad);
@@ -66,7 +70,7 @@ describe('HomeComponent', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('U-home_clears_the_error_when_the_person_types_again', () => {
+  it('U-selector_clears_the_error_when_the_person_types_again', () => {
     const { el, input, type, submit } = setup();
     type('ab');
     submit();
