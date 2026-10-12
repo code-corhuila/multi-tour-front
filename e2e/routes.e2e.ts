@@ -40,3 +40,12 @@ test('E2E· one_portal_down_only_its_area_fails', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Multitour', level: 1 })).toBeVisible();
   await expect(page.getByText('Acme Tours')).toBeVisible();
 });
+test('E2E home_shows_the_company_field_and_goes_to_the_tenant_link', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Ingresa con el enlace de tu empresa.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Administración de la plataforma' })).toBeVisible();
+  await page.getByLabel('Identificador de tu empresa').fill('acme');
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await expect(page).toHaveURL(/\/t\/acme/);
+  await expect(page.getByText('Acme Tours')).toBeVisible();
+});
