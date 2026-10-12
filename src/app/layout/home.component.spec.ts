@@ -33,6 +33,11 @@ describe('HomeComponent', () => {
     expect(link?.textContent).toContain('Administración de la plataforma');
   });
 
+  it('U-home_draws_its_own_quiet_wordmark_since_the_shell_has_no_header', () => {
+    const { el } = setup();
+    expect(el.querySelector('.wordmark')?.textContent?.trim()).toBe('Multi Tour');
+  });
+
   it('U-home_button_is_disabled_while_the_field_is_empty', () => {
     const { button, type } = setup();
     expect(button().disabled).toBe(true);
