@@ -15,7 +15,7 @@ async function render(identifier = 'acme') {
   return harness.routeNativeElement as HTMLElement;
 }
 const hrefs = (el: HTMLElement, text: string) =>
-  [...el.querySelectorAll<HTMLAnchorElement>('a')].filter((a) => a.textContent?.includes(text)).map((a) => a.getAttribute('href'));
+  Array.from(el.querySelectorAll<HTMLAnchorElement>('a')).filter((a) => a.textContent?.includes(text)).map((a) => a.getAttribute('href'));
 
 describe('LandingComponent', () => {
   it('U-landing_draws_the_hero_of_the_mockup', async () => {
@@ -30,7 +30,7 @@ describe('LandingComponent', () => {
 
   it('U-landing_has_the_three_steps_with_numbers_and_icons', async () => {
     const el = await render();
-    const steps = [...el.querySelectorAll('.mth-benefit')];
+    const steps = Array.from(el.querySelectorAll('.mth-benefit'));
     expect(steps.map((s) => s.querySelector('.mth-benefit-index')?.textContent)).toEqual(['01', '02', '03']);
     expect(steps.map((s) => s.querySelector('.mth-benefit-title')?.textContent)).toEqual([
       'Explora experiencias',
@@ -47,7 +47,7 @@ describe('LandingComponent', () => {
     expect(hrefs(el, 'Acceder al equipo del operador')).toEqual(['/t/acme/ingresar?tab=operador']);
     expect(hrefs(el, 'Ver catálogo')).toEqual(['/t/acme/ingresar']);
     expect(hrefs(el, 'Descubrir experiencias')).toEqual(['/t/acme/ingresar']);
-    const others = [...el.querySelectorAll('a:not(.mth-brand):not(.skip-link)')].map((a) => a.getAttribute('href'));
+    const others = Array.from(el.querySelectorAll('a:not(.mth-brand):not(.skip-link)')).map((a) => a.getAttribute('href'));
     expect(others.every((h) => h?.startsWith('/t/acme/ingresar'))).toBe(true);
   });
 
