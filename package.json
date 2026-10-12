@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "ng serve",
+    "start:demo": "ng serve --configuration demo",
     "build": "ng build",
     "test": "ng test --watch=false",
     "e2e": "playwright test"
