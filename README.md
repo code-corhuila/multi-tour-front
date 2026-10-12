@@ -15,7 +15,7 @@ npm start    # http://localhost:4200
 ```
 
 `npm run start:demo` serves the modules from `portals/` and the manifest from `public/`.
-The E2E stubs are only used with the `development` configuration.
+The stubs of `e2e/stubs/` are served by the `development` configuration and, in the browser checks, by request interception.
 Copy `portal.js` and `portal.css` from each portal to `portals/<name>.js` and `portals/<name>.css`.
 
 ## Where the data is
@@ -27,12 +27,23 @@ Nowhere: this repository holds no data. It only calls the API through the gatewa
 ```bash
 npm test     # Vitest through the Angular unit-test builder
 npm run build
-npm run e2e  # three Playwright checks on the development build (run npx playwright install chromium once)
 ```
 
 The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists in the `development` and `demo` configurations; the production build swaps it out.
 
-The CI runs `npm ci`, `npm run build`, `npm test` and the E2E checks on every pull request to `develop` and `qa`.
+### Browser checks: on the image, never on a development server
+
+The Playwright checks (`e2e/*.e2e.ts`) run against the production image on port 8080; no `ng serve` is started. The stub remotes and the test data reach the browser only through `page.route` (`e2e/support/container.ts`), so the image under test is the one that ships.
+
+1. In each portal repository: `npm ci` and `npm run build:module`; copy `portal.js` and `portal.css` to `portals/<name>.js` and `portals/<name>.css` here.
+2. `docker build -t multi-tour-front .`
+3. `docker run -d --name front-e2e -p 8080:8080 multi-tour-front`
+4. `npm run e2e` (base URL `http://localhost:8080`; `E2E_BASE_URL` moves it; run `npx playwright install chromium` once).
+5. `docker rm -f front-e2e`. No server is left running.
+
+A portal whose module is not in `portals/` has its mounted-portal check skipped and its area shows "not available". Each run keeps one screenshot per area in `test-results/areas/` as evidence, not as a pixel baseline.
+
+The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, then runs the browser checks on it, on every pull request to `develop` and `qa`.
 
 ## Assets and licenses
 
