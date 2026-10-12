@@ -30,6 +30,13 @@ The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exi
 
 The CI runs `npm ci`, `npm run build`, `npm test` and the E2E checks on every pull request to `develop` and `qa`.
 
+## Assets and licenses
+
+Everything is served from this origin (no CDN). Fonts and photos live in `public/assets/`:
+
+- `fonts/fraunces.woff2` and `fonts/manrope.woff2`: latin subset, variable files, declared in `src/styles.css`. Fraunces and Manrope are under the SIL Open Font License 1.1.
+- `mountain-hero.jpg`, `destino-sendero-del-condor.jpg`, `destino-cascadas-de-iraka.jpg`, `destino-bahia-esmeralda.jpg`: photos from Unsplash, under the Unsplash License (free use, no attribution required). The Mockup's demo content of the landing uses them.
+
 ## The production image
 
 `Dockerfile` builds the shell (`npm ci`, `npm run build`) and serves it with `nginxinc/nginx-unprivileged` (non-root, port 8080, versions pinned). `nginx/default.conf` sets the security headers (CSP, `nosniff`, frame and referrer policies), falls back to `index.html` for the router, and never caches `federation.manifest.json` or anything under `/portals/`.

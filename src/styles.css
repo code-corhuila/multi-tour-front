@@ -1,0 +1,22 @@
+/* Self-hosted type of the Mockup: Fraunces for titles, Manrope for text (SIL OFL, see the README). */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/assets/fonts/fraunces.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/assets/fonts/manrope.woff2') format('woff2');
+}
+
+body {
+  margin: 0;
+  background: #faf9f6;
+  color: #102a32;
+  font-family: 'Manrope', sans-serif;
+}
