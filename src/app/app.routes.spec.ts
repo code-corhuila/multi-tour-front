@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { authGuard } from './core/auth/auth.guard';
 import { routes } from './app.routes';
+import { LandingComponent } from './landing/landing.component';
+import { CompanySelectorComponent } from './layout/company-selector.component';
 
 const route = (path: string) => routes.find((r) => r.path === path);
 
@@ -29,6 +31,12 @@ describe('route table', () => {
     expect(children[0]?.path).toBe('');
     expect(children[0]?.pathMatch).toBe('full');
     expect(route('platform')?.children?.[0]?.path).not.toBe('');
+  });
+
+  it('shows the welcome at the root and the company selector at ingresar, ending in the 404', () => {
+    expect(route('')?.component).toBe(LandingComponent);
+    expect(route('ingresar')?.component).toBe(CompanySelectorComponent);
+    expect(routes.at(-1)?.path).toBe('**');
   });
 
   it('keeps the old sign-in path as an alias of ingresar under the tenant and the platform', () => {

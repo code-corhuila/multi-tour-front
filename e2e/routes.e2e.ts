@@ -33,8 +33,8 @@ test('E2E· one_portal_down_only_its_area_fails', async ({ page }) => {
   await signInThroughThePortal(page);
   await expect(page.getByRole('alert')).toContainText('stub-down is not available right now');
 });
-test('E2E home_shows_the_company_field_and_goes_to_the_tenant_link', async ({ page }) => {
-  await page.goto('/');
+test('E2E selector_shows_the_company_field_and_goes_to_the_tenant_link', async ({ page }) => {
+  await page.goto('/ingresar');
   await expect(page.getByText('Ingresa con el enlace de tu empresa.')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Administración de la plataforma' })).toBeVisible();
   await page.getByLabel('Identificador de tu empresa').fill('acme');

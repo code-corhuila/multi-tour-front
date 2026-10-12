@@ -1,0 +1,45 @@
+<div id="contenido" class="mth-login-shell">
+  <aside class="mth-login-visual">
+    <img class="mth-login-visual-img" src="/assets/mountain-hero.jpg" alt="Cordillera iluminada por la luz dorada del atardecer, vista desde un sendero de montaña" />
+    <div class="mth-login-visual-content">
+      <a class="mth-login-visual-brand" routerLink="/">Multi Tour</a>
+      <h2 class="mth-login-visual-title">Gestiona operadores, reservas y experiencias en un solo lugar.</h2>
+    </div>
+  </aside>
+
+  <section class="mth-login-panel">
+    <header class="mth-login-header">
+      <a class="mth-login-brand" routerLink="/">Multi Tour</a>
+      <a class="mth-login-back" routerLink="/">Volver al inicio</a>
+    </header>
+
+    <div class="mth-login-stage">
+      <div class="mth-login-card">
+        <span class="mth-login-eyebrow">Multi Tour</span>
+        <h1 class="mth-login-title">Ingresa a tu empresa</h1>
+        <p class="mth-login-subtitle">Ingresa con el enlace de tu empresa.</p>
+
+        <form class="mth-login-form" novalidate (submit)="enter($event)">
+          <label for="company">Identificador de tu empresa</label>
+          <input
+            id="company"
+            name="company"
+            autocomplete="off"
+            [value]="value()"
+            [attr.aria-invalid]="error() ? 'true' : null"
+            [attr.aria-describedby]="error() ? 'company-error' : null"
+            (input)="type($event)"
+          />
+          @if (error()) {
+            <p id="company-error" class="mth-login-error" role="alert">{{ error() }}</p>
+          }
+          <button class="mth-login-submit" type="submit" [disabled]="value().trim() === ''">
+            Entrar <span aria-hidden="true">→</span>
+          </button>
+        </form>
+
+        <a class="mth-login-platform" routerLink="/platform">Administración de la plataforma <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>
+</div>
