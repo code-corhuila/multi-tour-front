@@ -16,7 +16,8 @@
             "outputPath": "dist/shell",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "tsConfig": "tsconfig.app.json"
+            "tsConfig": "tsconfig.app.json",
+            "styles": ["src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -32,6 +33,7 @@
               "extractLicenses": false,
               "sourceMap": true,
               "assets": [
+                { "glob": "assets/**", "input": "public" },
                 { "glob": "federation.manifest.json", "input": "e2e/manifest" },
                 { "glob": "*.js", "input": "e2e/stubs", "output": "stubs" }
               ]
