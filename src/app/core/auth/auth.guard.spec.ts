@@ -26,16 +26,16 @@ describe('authGuard', () => {
     TestBed.inject(CONTAINER_CLIENT).store.of().close();
   });
 
-  it('sends a tenant visitor without a session to the tenant sign-in, keeping the requested url', () => {
+  it('sends a tenant visitor without a session to the tenant ingresar route, keeping the requested url', () => {
     const { run, router } = setup();
     const result = run('acme', '/t/acme/areas/reports?x=1') as UrlTree;
-    expect(router.serializeUrl(result)).toBe('/t/acme/sign-in?returnUrl=%2Ft%2Facme%2Fareas%2Freports%3Fx%3D1');
+    expect(router.serializeUrl(result)).toBe('/t/acme/ingresar?returnUrl=%2Ft%2Facme%2Fareas%2Freports%3Fx%3D1');
   });
 
   it('sends the platform visitor to the platform sign-in', () => {
     const { run, router } = setup();
     expect(router.serializeUrl(run(undefined, '/platform/areas/x') as UrlTree)).toBe(
-      '/platform/sign-in?returnUrl=%2Fplatform%2Fareas%2Fx',
+      '/platform/ingresar?returnUrl=%2Fplatform%2Fareas%2Fx',
     );
   });
 

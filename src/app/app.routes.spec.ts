@@ -31,6 +31,13 @@ describe('route table', () => {
     expect(route('platform')?.children?.[0]?.path).not.toBe('');
   });
 
+  it('keeps the old sign-in path as an alias of ingresar under the tenant and the platform', () => {
+    for (const parent of ['t/:identifier', 'platform']) {
+      const alias = (route(parent)?.children ?? []).find((c) => c.path === 'sign-in');
+      expect(alias?.redirectTo).toBe('ingresar');
+    }
+  });
+
   it('includes the development sign-in in the development build', () => {
     expect(route('dev-sign-in')).toBeDefined();
   });
