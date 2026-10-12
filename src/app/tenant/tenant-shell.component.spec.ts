@@ -34,10 +34,11 @@ describe('TenantShellComponent', () => {
     expect(el.querySelector('button')?.textContent).toContain('Try again');
   });
 
-  it('shows the company name, applies its theme and renders the routes of an active tenant', () => {
+  it('applies its theme and renders the routes of an active tenant without a name heading of its own', () => {
     const el = render({ state: 'active', profile: profile('ACTIVE') });
     expect(el.querySelector('router-outlet')).not.toBeNull();
-    expect(el.textContent).toContain('Acme Tours');
+    expect(el.querySelector('h2')).toBeNull();
+    expect(el.textContent).not.toContain('Acme Tours');
     expect(el.getAttribute('data-theme')).toBe('acme');
   });
 });
