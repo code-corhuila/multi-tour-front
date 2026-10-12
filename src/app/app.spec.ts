@@ -9,6 +9,7 @@ describe('App', () => {
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('header')).toBeNull();
+    expect(el.querySelector('main router-outlet')).not.toBeNull();
     expect(el.querySelector('h1')).toBeNull();
     expect(el.querySelector('router-outlet')).not.toBeNull();
   });
