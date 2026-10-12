@@ -1,3 +1,4 @@
 {
-  "identity-audit-portal": "portals/identity-audit-portal.js"
+  "identity-audit-portal": "portals/identity-audit-portal.js",
+  "commercial-reservation-portal": "portals/commercial-reservation-portal.js"
 }
