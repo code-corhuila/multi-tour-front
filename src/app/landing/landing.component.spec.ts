@@ -4,10 +4,17 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
 import { LandingComponent } from './landing.component';
 
-/** Rendered by the real router at `/t/<identifier>`, as the app does. */
-async function render(identifier = 'acme') {
+const ACTIVE = (commercialName: string) => ({
+  state: 'active',
+  profile: { identifier: 'acme', commercialName, tenantStatus: 'ACTIVE' },
+});
+
+/** Rendered by the real router at `/t/<identifier>`, with the tenant the resolver would have loaded. */
+async function render(identifier = 'acme', tenant: object = ACTIVE('Acme Tours')) {
   TestBed.configureTestingModule({
-    providers: [provideRouter([{ path: 't/:identifier', component: LandingComponent }])],
+    providers: [
+      provideRouter([{ path: 't/:identifier', component: LandingComponent, resolve: { tenant: () => tenant } }]),
+    ],
   });
   const harness = await RouterTestingHarness.create();
   await harness.navigateByUrl(`/t/${identifier}`);
@@ -54,5 +61,18 @@ describe('LandingComponent', () => {
   it('U-landing_works_without_motion_support_and_keeps_everything_visible', async () => {
     const el = await render();
     expect(el.querySelectorAll('.mth-pending').length).toBe(0);
+  });
+
+  it('U-landing_shows_the_company_as_kicker_and_in_the_document_title', async () => {
+    const el = await render('acme', ACTIVE('Acme Tours'));
+    expect(el.querySelector('.mth-eyebrow')?.textContent?.trim()).toBe('Acme Tours');
+    expect(el.querySelector('.mth-brand')?.textContent).toContain('Multi Tour');
+    expect(document.title).toBe('Acme Tours | Multi Tour');
+  });
+
+  it('U-landing_keeps_the_generic_kicker_without_a_commercial_name', async () => {
+    const el = await render('acme', ACTIVE('  '));
+    expect(el.querySelector('.mth-eyebrow')?.textContent?.trim()).toBe('Multi Tour');
+    expect(document.title).toBe('Multi Tour');
   });
 });
