@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { serveStubs, serveTenantProfile } from './support/container';
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/api/v1/identity-audit/public/tenants/*', (route) =>
-    route.fulfill({ json: { identifier: 'acme', commercialName: 'Acme Tours', tenantStatus: 'ACTIVE' } }),
-  );
+  await serveStubs(page);
+  await serveTenantProfile(page);
 });
 
 /** The portals draw full-bleed screens with their own brand: the shell adds no header or tenant name. */

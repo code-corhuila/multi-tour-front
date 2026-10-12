@@ -33,9 +33,19 @@ jobs:
           test -f dist/dev/browser/index.html
           ! bash scripts/check-main-build.sh dist/dev/browser
       - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
       - name: Build the production image and check it
         run: |
           docker build -t multi-tour-front:ci .
           bash scripts/check-image.sh multi-tour-front:ci
+      - run: npx playwright install --with-deps chromium
+      # The browser checks run on the image (HU-FRT-001): no development server is started.
+      - name: Run the image on port 8080
+        run: |
+          docker run -d --name front-e2e -p 8080:8080 multi-tour-front:ci
+          for _ in $(seq 1 30); do curl -sf -o /dev/null http://localhost:8080/ && break; sleep 1; done
+      - run: npx playwright test
+        env:
+          E2E_BASE_URL: http://localhost:8080
+      - name: Remove the container
+        if: always()
+        run: docker rm -f front-e2e || true

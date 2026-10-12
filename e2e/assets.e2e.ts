@@ -17,10 +17,11 @@ test('E2E assets_are_served_from_the_same_origin', async ({ request }) => {
   }
 });
 
-test('E2E fonts_are_declared_and_load_without_a_cdn', async ({ page }) => {
+test('E2E fonts_are_declared_and_load_without_a_cdn', async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!).origin;
   const external: string[] = [];
   page.on('request', (r) => {
-    if (!r.url().startsWith('http://localhost:4300')) external.push(r.url());
+    if (new URL(r.url()).origin !== origin) external.push(r.url());
   });
   await page.goto('/');
   const loaded = await page.evaluate(async () => {
