@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { DEV_ROUTES } from './core/auth/dev-routes';
+import { LandingComponent } from './landing/landing.component';
 import { HomeComponent } from './layout/home.component';
 import { NotFoundComponent } from './layout/not-found.component';
 import { IDENTITY_PORTAL, PortalPageComponent } from './layout/portal-page.component';
@@ -16,7 +17,13 @@ const portalRoutes: Routes = [
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'platform', children: portalRoutes },
-  { path: 't/:identifier', component: TenantShellComponent, resolve: { tenant: tenantResolver }, children: portalRoutes },
+  {
+    path: 't/:identifier',
+    component: TenantShellComponent,
+    resolve: { tenant: tenantResolver },
+    // The public home of the tenant needs no session; everything else is the portal's.
+    children: [{ path: '', pathMatch: 'full', component: LandingComponent }, ...portalRoutes],
+  },
   ...DEV_ROUTES,
   { path: '**', component: NotFoundComponent },
 ];
