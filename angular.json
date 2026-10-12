@@ -20,6 +20,15 @@
             "styles": ["src/styles.css"]
           },
           "configurations": {
+            "demo": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                { "glob": "**/*", "input": "public" },
+                { "glob": "**/*", "input": "portals", "output": "portals" }
+              ]
+            },
             "production": {
               "outputHashing": "all",
               "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
@@ -43,7 +52,10 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "configurations": { "development": { "buildTarget": "shell:build:development" } },
+          "configurations": {
+            "development": { "buildTarget": "shell:build:development" },
+            "demo": { "buildTarget": "shell:build:demo" }
+          },
           "defaultConfiguration": "development"
         },
         "test": {
