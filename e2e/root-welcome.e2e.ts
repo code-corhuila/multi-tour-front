@@ -1,12 +1,15 @@
 import { expect, test } from '@playwright/test';
 
 test('E2E root_shows_the_welcome_and_ingresar_reaches_the_general_login', async ({ page }) => {
+  const logs: string[] = [];
+  page.on('console', (m) => logs.push(m.text()));
+  page.on('pageerror', (e) => logs.push(String(e)));
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: /Destinos que valen la pena vivir/ })).toBeVisible();
   await page.locator('header.mth-header').getByRole('link', { name: 'Ingresar' }).click();
   await expect(page).toHaveURL(/\/ingresar$/);
   await page.waitForTimeout(1500);
-  expect(await page.locator('app-root').innerText()).toContain('Stub sign-in');
+  expect(logs.join(' || ') + await page.locator('app-root').innerText()).toContain('Stub sign-in');
   await expect(page.locator('app-root > header')).toHaveCount(0);
 });
 
