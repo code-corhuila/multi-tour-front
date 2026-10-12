@@ -10,7 +10,7 @@ import { tenantResolver } from './tenant/tenant.resolver';
 
 /** Under a tenant link or the platform: `areas/:remote` is protected; everything else is the identity portal's (sign-in included). */
 const portalRoutes: Routes = [
-  // The old sign-in path stays as an alias (the query string, eturnUrl included, is kept).
+  // The old sign-in path stays as an alias; the query string (returnUrl included) is kept.
   { path: 'sign-in', redirectTo: 'ingresar' },
   { path: 'areas/:remote', component: PortalPageComponent, canActivate: [authGuard] },
   { path: '**', component: PortalPageComponent, data: { remote: IDENTITY_PORTAL } },
