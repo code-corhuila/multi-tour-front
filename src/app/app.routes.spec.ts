@@ -24,6 +24,13 @@ describe('route table', () => {
     }
   });
 
+  it('shows the landing at the index of the tenant link, before the identity portal', () => {
+    const children = route('t/:identifier')?.children ?? [];
+    expect(children[0]?.path).toBe('');
+    expect(children[0]?.pathMatch).toBe('full');
+    expect(route('platform')?.children?.[0]?.path).not.toBe('');
+  });
+
   it('includes the development sign-in in the development build', () => {
     expect(route('dev-sign-in')).toBeDefined();
   });
