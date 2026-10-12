@@ -14,6 +14,10 @@ npm ci
 npm start    # http://localhost:4200
 ```
 
+`npm run start:demo` serves the modules from `portals/` and the manifest from `public/`.
+The E2E stubs are only used with the `development` configuration.
+Copy `portal.js` and `portal.css` from each portal to `portals/<name>.js` and `portals/<name>.css`.
+
 ## Where the data is
 
 Nowhere: this repository holds no data. It only calls the API through the gateway.
@@ -26,7 +30,7 @@ npm run build
 npm run e2e  # three Playwright checks on the development build (run npx playwright install chromium once)
 ```
 
-The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists only in the `development` configuration; the production build swaps it out.
+The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists in the `development` and `demo` configurations; the production build swaps it out.
 
 The CI runs `npm ci`, `npm run build`, `npm test` and the E2E checks on every pull request to `develop` and `qa`.
 
