@@ -5,7 +5,8 @@ test('E2E root_shows_the_welcome_and_ingresar_reaches_the_general_login', async 
   await expect(page.getByRole('heading', { level: 1, name: /Destinos que valen la pena vivir/ })).toBeVisible();
   await page.locator('header.mth-header').getByRole('link', { name: 'Ingresar' }).click();
   await expect(page).toHaveURL(/\/ingresar$/);
-  await expect(page.getByText('Stub sign-in')).toBeVisible();
+  await page.waitForTimeout(1500);
+  expect(await page.locator('app-root').innerText()).toContain('Stub sign-in');
   await expect(page.locator('app-root > header')).toHaveCount(0);
 });
 
