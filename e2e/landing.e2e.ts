@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { serveStubs, serveTenantProfile } from './support/container';
 
 test.beforeEach(async ({ page }) => {
-  await page.route('**/api/v1/identity-audit/public/tenants/*', (route) =>
-    route.fulfill({ json: { identifier: 'acme', commercialName: 'Acme Tours', tenantStatus: 'ACTIVE' } }),
-  );
+  await serveStubs(page);
+  await serveTenantProfile(page);
 });
 
 test('E2E landing_is_the_public_home_of_the_tenant_without_a_session', async ({ page }) => {

@@ -1,15 +1,10 @@
 import { expect, Page, test } from '@playwright/test';
-
-const PROFILE = { identifier: 'acme', commercialName: 'Acme Tours', tenantStatus: 'ACTIVE' };
+import { serveStubs, serveTenantProfile } from './support/container';
 
 test.beforeEach(async ({ page }) => {
   // The gateway is the page's own origin, so the public profile route can be answered here.
-  await page.route('**/api/v1/identity-audit/public/tenants/*', (route) => {
-    const identifier = route.request().url().split('/').pop();
-    return identifier === 'acme'
-      ? route.fulfill({ json: PROFILE })
-      : route.fulfill({ status: 404, json: { error: 'NOT_FOUND', message: 'Not found', traceId: 't-1' } });
-  });
+  await serveStubs(page);
+  await serveTenantProfile(page);
 });
 
 /** The stub identity portal shows a button that opens a session through the props the container gives it. */
