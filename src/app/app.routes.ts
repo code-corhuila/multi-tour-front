@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { DEV_ROUTES } from './core/auth/dev-routes';
 import { LandingComponent } from './landing/landing.component';
-import { HomeComponent } from './layout/home.component';
+import { CompanySelectorComponent } from './layout/company-selector.component';
 import { NotFoundComponent } from './layout/not-found.component';
 import { IDENTITY_PORTAL, PortalPageComponent } from './layout/portal-page.component';
 import { TenantShellComponent } from './tenant/tenant-shell.component';
@@ -17,7 +17,9 @@ const portalRoutes: Routes = [
 ];
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', component: HomeComponent },
+  // Without a tenant the landing is generic; ingresar is where a company is chosen.
+  { path: '', pathMatch: 'full', component: LandingComponent },
+  { path: 'ingresar', component: CompanySelectorComponent },
   { path: 'platform', children: portalRoutes },
   {
     path: 't/:identifier',
