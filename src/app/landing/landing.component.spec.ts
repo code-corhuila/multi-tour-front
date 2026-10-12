@@ -75,4 +75,19 @@ describe('LandingComponent', () => {
     expect(el.querySelector('.mth-eyebrow')?.textContent?.trim()).toBe('Multi Tour');
     expect(document.title).toBe('Multi Tour');
   });
+
+  it('U-landing_at_the_root_is_generic_and_every_way_in_goes_to_the_company_selector', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([{ path: '', component: LandingComponent }])] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/');
+    harness.detectChanges();
+    const el = harness.routeNativeElement as HTMLElement;
+    expect(el.querySelector('.mth-eyebrow')?.textContent?.trim()).toBe('Multi Tour');
+    expect(document.title).toBe('Multi Tour');
+    expect(el.querySelector('.mth-brand')?.getAttribute('href')).toBe('/');
+    for (const text of ['Ingresar', 'Equipo del operador', 'Ver catálogo', 'Descubrir experiencias', 'Ver detalle', 'Tours']) {
+      expect(hrefs(el, text).every((h) => h === '/ingresar'), text).toBe(true);
+    }
+    expect(hrefs(el, 'Acceder al equipo del operador')).toEqual(['/platform']);
+  });
 });
