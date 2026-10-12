@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { DEV_ROUTES } from './core/auth/dev-routes';
 import { LandingComponent } from './landing/landing.component';
-import { CompanySelectorComponent } from './layout/company-selector.component';
 import { NotFoundComponent } from './layout/not-found.component';
 import { IDENTITY_PORTAL, PortalPageComponent } from './layout/portal-page.component';
 import { TenantShellComponent } from './tenant/tenant-shell.component';
@@ -17,9 +16,13 @@ const portalRoutes: Routes = [
 ];
 
 export const routes: Routes = [
-  // Without a tenant the landing is generic; ingresar is where a company is chosen.
+  // Without a tenant the landing is generic; its ways in lead to the general login.
   { path: '', pathMatch: 'full', component: LandingComponent },
-  { path: 'ingresar', component: CompanySelectorComponent },
+  // The general login (tabs Cliente / Equipo del operador) is drawn by the identity portal.
+  {
+    path: 'ingresar',
+    children: [{ path: '**', component: PortalPageComponent, data: { remote: IDENTITY_PORTAL, scope: 'general' } }],
+  },
   { path: 'platform', children: portalRoutes },
   {
     path: 't/:identifier',

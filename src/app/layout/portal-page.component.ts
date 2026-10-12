@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { safeReturnUrl } from '../core/auth/return-url';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
-import { MountProps, Session } from '../core/client/types';
+import { MountProps, Scope, Session } from '../core/client/types';
 import { RemoteUnavailableComponent } from '../core/errors/remote-unavailable.component';
 import { RemoteHostComponent } from '../core/federation/remote-host.component';
 import { MANIFEST_LOADER } from '../core/federation/remote-loader';
@@ -58,7 +58,8 @@ export class PortalPageComponent {
     if (manifest === 'failed') return { kind: 'unavailable', remote };
     const url = Object.hasOwn(manifest, remote) ? manifest[remote] : undefined;
     if (!url) return fixed ? { kind: 'unavailable', remote } : { kind: 'not-found' };
-    return { kind: 'mount', key: `${identifier ?? ''}|${remote}`, remote, url, props: this.propsFor(identifier) };
+    const scope = this.route.snapshot.data['scope'] as Scope | undefined;
+    return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: this.propsFor(identifier, scope) };
   });
 
   constructor() {
@@ -74,8 +75,8 @@ export class PortalPageComponent {
   }
 
   /** After the portal opens a full session, the person goes back to the url the guard kept. */
-  private propsFor(identifier?: string): MountProps {
-    const props = this.client.propsFor(identifier);
+  private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
+    const props = this.client.propsFor(identifier, scope);
     const real = props.session;
     const session: Session = {
       get roles() {
@@ -84,13 +85,17 @@ export class PortalPageComponent {
       get access() {
         return real.access;
       },
-      open: (answer) => {
-        real.open(answer);
+      open: (answer, id) => {
+        real.open(answer, id);
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
         if (back && !real.access) void this.router.navigateByUrl(back);
       },
       close: () => real.close(),
     };
-    return { ...props, session };
+    // Only a path of this application: the portal moves around without a page load (the session is in memory).
+    const navigate = (path: string) => {
+      if (safeReturnUrl(path)) void this.router.navigateByUrl(path);
+    };
+    return { ...props, session, navigate };
   }
 }

@@ -48,6 +48,16 @@ describe('mount scope', () => {
     expect(store.of().token).toBeNull();
   });
 
+  it('U-general_session_closes_the_previous_company_when_another_is_typed', () => {
+    const { propsFor, store } = make();
+    const { session } = propsFor(undefined, 'general');
+    session.open(answer(jwt(['A'])), 'acme');
+    session.open(answer(jwt(['B'])), 'beta');
+    expect(store.of('acme').token).toBeNull();
+    expect(store.of('beta').token).toBe(jwt(['B']));
+    store.of('beta').close();
+  });
+
   it('U-tenant_and_platform_sessions_ignore_an_identifier_passed_to_open', () => {
     const { propsFor, store } = make();
     propsFor('acme').session.open(answer(jwt(['A'])), 'other');

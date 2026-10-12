@@ -3,7 +3,7 @@
 ## What it is
 
 The Angular 21 container (shell) of the Multitour interface. It will own the HTTP client and the
-session, and mount each domain portal. It routes `/` (home), `/platform`, `/t/<identifier>` (resolves the tenant's public profile first) and `**` (the common 404), guards `areas/<remote>` and mounts each portal from `federation.manifest.json`.
+session, and mount each domain portal. It routes `/` (the welcome), `/ingresar` (the general login, drawn by the identity portal), `/platform`, `/t/<identifier>` (resolves the tenant's public profile first) and `**` (the common 404), guards `areas/<remote>` and mounts each portal from `federation.manifest.json`.
 
 ## How to start it
 
@@ -44,6 +44,17 @@ The Playwright checks (`e2e/*.e2e.ts`) run against the production image on port 
 A portal whose module is not in `portals/` has its mounted-portal check skipped and its area shows "not available". Each run keeps one screenshot per area in `test-results/areas/` as evidence, not as a pixel baseline.
 
 The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, then runs the browser checks on it, on every pull request to `develop` and `qa`.
+
+## The mount contract of a portal
+
+`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal two optional fields:
+
+| Field | Meaning |
+|---|---|
+| `scope` | `'general'` at `/ingresar` (the general login, no identifier), `'platform'` under `/platform`, `'tenant'` under `/t/<identifier>` |
+| `navigate(path)` | SPA navigation owned by the container. The portal must use it for every move between screens and areas and never reload the page: the session lives in memory and a full navigation drops it. Only a path of this app is followed (single leading slash, no backslash) |
+
+`session.open(answer, identifier?)`: in the `general` scope the portal passes the company identifier typed in the login (kebab-case, 3 to 40; otherwise it throws and nothing opens). The session is kept under that identifier, the portal's `apiClient` carries its token, and `navigate('/t/<identifier>')` or `navigate('/t/<identifier>/areas/<remote>')` lands on the tenant with the session intact. In the other scopes the identifier is ignored.
 
 ## Assets and licenses
 
