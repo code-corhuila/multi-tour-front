@@ -28,7 +28,6 @@ import { TenantLookup } from './tenant.resolver';
         </section>
       }
       @default {
-        <h2>{{ name }}</h2>
         <router-outlet />
       }
     }

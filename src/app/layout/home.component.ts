@@ -16,21 +16,23 @@ const INVALID = 'Usa de 3 a 40 letras minúsculas, números o guiones, sin guion
   styles: `
     :host { display: block; }
     .welcome { display: grid; gap: 14px; justify-items: center; max-width: 340px; margin: 12vh auto 0; padding: 0 16px;
-      color: #1c2326; font-family: 'Manrope', sans-serif; text-align: center; }
-    .lead { margin: 0; color: #667579; font-size: 0.95rem; }
+      color: #102a32; font-family: 'Manrope', sans-serif; text-align: center; }
+    .wordmark { margin: 0; font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.01em; color: #102a32; }
+    .lead { margin: 0; color: #627177; font-size: 0.95rem; }
     form { display: grid; gap: 8px; width: 100%; text-align: left; }
     label { color: #243238; font-size: 0.82rem; font-weight: 700; }
-    input { min-height: 40px; padding: 0 10px; border: 1px solid #dce5df; border-radius: 10px; background: #fffefb;
+    input { min-height: 40px; padding: 0 10px; border: 1px solid #e5e0d8; border-radius: 6px; background: #fff;
       color: inherit; font: inherit; }
     input[aria-invalid='true'] { border-color: #b34a4a; }
     .error { margin: 0; color: #b34a4a; font-size: 0.8rem; }
-    button { min-height: 40px; border: 0; border-radius: 10px; background: #146b5d; color: #fff; font: inherit;
-      font-weight: 800; cursor: pointer; }
-    button:disabled { background: #eef3f0; color: #93a29d; cursor: not-allowed; }
-    a { color: #667579; font-size: 0.82rem; }
+    button { min-height: 40px; border: 1px solid #e9785d; border-radius: 6px; background: #e9785d; color: #102a32; font: inherit;
+      font-weight: 700; cursor: pointer; }
+    button:disabled { border-color: #e5e0d8; background: #efe8de; color: #627177; cursor: not-allowed; }
+    a { color: #627177; font-size: 0.82rem; }
   `,
   template: `
     <section class="welcome">
+      <h1 class="wordmark">Multi Tour</h1>
       <p class="lead">Ingresa con el enlace de tu empresa.</p>
       <form novalidate (submit)="enter($event)">
         <label for="company">Identificador de tu empresa</label>
