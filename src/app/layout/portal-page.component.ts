@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { safeReturnUrl } from '../core/auth/return-url';
@@ -7,6 +7,8 @@ import { MountProps, Scope, Session } from '../core/client/types';
 import { RemoteUnavailableComponent } from '../core/errors/remote-unavailable.component';
 import { RemoteHostComponent } from '../core/federation/remote-host.component';
 import { MANIFEST_LOADER } from '../core/federation/remote-loader';
+import { TenantLookup } from '../tenant/tenant.resolver';
+import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
 
 export const IDENTITY_PORTAL = 'identity-audit-portal';
@@ -46,6 +48,8 @@ export class PortalPageComponent {
   private readonly router = inject(Router);
   private readonly client = inject(CONTAINER_CLIENT);
   private readonly loadManifest = inject(MANIFEST_LOADER);
+  /** Provided by the tenant shell only: the platform and the general login have no tenant colors. */
+  private readonly identity = inject(TenantVisualIdentity, { optional: true });
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
   private readonly manifest = signal<Record<string, string> | 'loading' | 'failed'>('loading');
 
@@ -74,6 +78,13 @@ export class PortalPageComponent {
     );
   }
 
+  /** The resolved profile's commercial name (route data of the tenant shell's resolver), only when non-blank. */
+  private commercialName(): string | undefined {
+    const tenant = this.route.snapshot.data['tenant'] as TenantLookup | undefined;
+    const name = tenant && 'profile' in tenant ? tenant.profile.commercialName : undefined;
+    return typeof name === 'string' && name.trim() !== '' ? name.trim() : undefined;
+  }
+
   /** After the portal opens a full session, the person goes back to the url the guard kept. */
   private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
     const props = this.client.propsFor(identifier, scope);
@@ -96,6 +107,17 @@ export class PortalPageComponent {
     const navigate = (path: string) => {
       if (safeReturnUrl(path)) void this.router.navigateByUrl(path);
     };
-    return { ...props, session, navigate };
+    const colors = this.identity && scope === undefined && identifier !== undefined ? this.identity : null;
+    const name = scope === undefined && identifier !== undefined ? this.commercialName() : undefined;
+    return {
+      ...props,
+      session,
+      navigate,
+      ...(name && { commercialName: name }),
+      ...(colors && {
+        visualIdentity: untracked(() => colors.current()),
+        onVisualIdentityChange: (value) => colors.change(value),
+      }),
+    };
   }
 }
