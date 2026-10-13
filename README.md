@@ -3,7 +3,7 @@
 ## What it is
 
 The Angular 21 container (shell) of the Multitour interface. It will own the HTTP client and the
-session, and mount each domain portal. It routes `/` (home), `/platform`, `/t/<identifier>` (resolves the tenant's public profile first) and `**` (the common 404), guards `areas/<remote>` and mounts each portal from `federation.manifest.json`.
+session, and mount each domain portal. It routes `/` (the welcome), `/ingresar` (the general login, drawn by the identity portal), `/platform`, `/t/<identifier>` (resolves the tenant's public profile first) and `**` (the common 404), guards `areas/<remote>` and mounts each portal from `federation.manifest.json`.
 
 ## How to start it
 
@@ -14,6 +14,10 @@ npm ci
 npm start    # http://localhost:4200
 ```
 
+`npm run start:demo` serves the modules from `portals/` and the manifest from `public/`.
+The stubs of `e2e/stubs/` are served by the `development` configuration and, in the browser checks, by request interception.
+Copy `portal.js` and `portal.css` from each portal to `portals/<name>.js` and `portals/<name>.css`.
+
 ## Where the data is
 
 Nowhere: this repository holds no data. It only calls the API through the gateway.
@@ -23,12 +27,47 @@ Nowhere: this repository holds no data. It only calls the API through the gatewa
 ```bash
 npm test     # Vitest through the Angular unit-test builder
 npm run build
-npm run e2e  # three Playwright checks on the development build (run npx playwright install chromium once)
 ```
 
-The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists only in the `development` configuration; the production build swaps it out.
+The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists in the `development` and `demo` configurations; the production build swaps it out.
 
-The CI runs `npm ci`, `npm run build`, `npm test` and the E2E checks on every pull request to `develop` and `qa`.
+### Browser checks: on the image, never on a development server
+
+The Playwright checks (`e2e/*.e2e.ts`) run against the production image on port 8080; no `ng serve` is started. The stub remotes and the test data reach the browser only through `page.route` (`e2e/support/container.ts`), so the image under test is the one that ships.
+
+1. In each portal repository: `npm ci` and `npm run build:module`; copy `portal.js` and `portal.css` to `portals/<name>.js` and `portals/<name>.css` here.
+2. `docker build -t multi-tour-front .`
+3. `docker run -d --name front-e2e -p 8080:8080 multi-tour-front`
+4. `npm run e2e` (base URL `http://localhost:8080`; `E2E_BASE_URL` moves it; run `npx playwright install chromium` once).
+5. `docker rm -f front-e2e`. No server is left running.
+
+A portal whose module is not in `portals/` has its mounted-portal check skipped and its area shows "not available". Each run keeps one screenshot per area in `test-results/areas/` as evidence, not as a pixel baseline.
+
+The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, then runs the browser checks on it, on every pull request to `develop` and `qa`.
+
+## The mount contract of a portal
+
+`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal two optional fields:
+
+| Field | Meaning |
+|---|---|
+| `scope` | `'general'` at `/ingresar` (the general login, no identifier), `'platform'` under `/platform`, `'tenant'` under `/t/<identifier>` |
+| `navigate(path)` | SPA navigation owned by the container. The portal must use it for every move between screens and areas and never reload the page: the session lives in memory and a full navigation drops it. Only a path of this app is followed (single leading slash, no backslash) |
+
+`session.open(answer, identifier?)`: in the `general` scope the portal passes the company identifier typed in the login (kebab-case, 3 to 40; otherwise it throws and nothing opens). The session is kept under that identifier, the portal's `apiClient` carries its token, and `navigate('/t/<identifier>')` or `navigate('/t/<identifier>/areas/<remote>')` lands on the tenant with the session intact. In the other scopes the identifier is ignored.
+
+### Visual identity (HU-IDA-003)
+
+Three more optional fields, set only on a tenant mount (never on the platform or the general login):
+
+| Field | Meaning |
+|---|---|
+| `visualIdentity` | The company's current colors `{ primaryColor, secondaryColor }` (`#RRGGBB`), or `null` when it chose none. The container already paints them as `--accent`, `--accent-strong` and `--accent-soft` on the tenant's area, so the portal reads those variables and paints nothing by itself |
+| `commercialName` | The commercial name of the company (non-blank string) so a screen can show it; omitted on the platform and the general login |
+| `onVisualIdentityChange(colors)` | The portal calls it with the colors the service returned after a save; the container validates them (a malformed pair is ignored) and updates the variables live, with no reload |
+
+`visualIdentity` is the value at mount time; after a save, read the CSS variables or use the colors the service returned.
+A portal that ignores both keeps mounting as before.
 
 ## Assets and licenses
 

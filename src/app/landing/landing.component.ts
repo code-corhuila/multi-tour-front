@@ -1,5 +1,9 @@
 import { afterNextRender, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TenantLookup } from '../tenant/tenant.resolver';
+
+const GENERIC = 'Multi Tour';
 
 /** The public home of a tenant (the Mockup "Home"): no session, every way in leads to the sign-in route of the portal. */
 @Component({
@@ -12,20 +16,36 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 export class LandingComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly identifier = inject(ActivatedRoute).snapshot.paramMap.get('identifier') ?? '';
+  private readonly route = inject(ActivatedRoute);
+  protected readonly identifier = this.route.snapshot.paramMap.get('identifier') ?? '';
 
-  protected readonly signIn = `/t/${this.identifier}/ingresar`;
+  /** The company of the link, from the profile the resolver loaded; generic when it has no commercial name. */
+  protected readonly company = this.commercialName();
+
+  /** No identifier: the root welcome, whose ways in lead to the general login. */
+  private readonly generic = this.identifier === '';
+  protected readonly home = this.generic ? '/' : `/t/${this.identifier}`;
+  protected readonly signIn = this.generic ? '/ingresar' : `/t/${this.identifier}/ingresar`;
   protected readonly operatorQuery = { tab: 'operador' };
 
   constructor() {
+    const title = inject(Title);
+    const before = title.getTitle();
+    title.setTitle(this.company === GENERIC ? GENERIC : `${this.company} | ${GENERIC}`);
+    this.destroyRef.onDestroy(() => title.setTitle(before));
     afterNextRender(() => this.startMotion());
   }
 
   /** The skip link must not be a `#` href: with `<base href="/">` it would leave the page. */
   protected skip(event: Event): void {
     event.preventDefault();
-    const main = this.host.querySelector<HTMLElement>('#contenido');
-    main?.focus();
+    this.host.querySelector<HTMLElement>('#contenido')?.focus();
+  }
+
+  private commercialName(): string {
+    const tenant = this.route.snapshot.data['tenant'] as TenantLookup | undefined;
+    const name = tenant && 'profile' in tenant ? tenant.profile.commercialName?.trim() : '';
+    return name || GENERIC;
   }
 
   /** Decorative only: header border once scrolled, and reveal on scroll. Nothing is hidden if the observer never fires. */
