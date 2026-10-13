@@ -3,11 +3,14 @@ import { ResolveFn } from '@angular/router';
 import { messageFor } from '../core/client/api-client';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
 import { ApiClient, ApiError } from '../core/client/types';
+import { VisualIdentity } from './visual-identity';
 
 export interface TenantProfile {
   identifier: string;
   commercialName: string;
   tenantStatus: 'ACTIVE' | 'INACTIVE';
+  /** Null or absent when the company chose no colors: the platform look applies. */
+  visualIdentity?: VisualIdentity | null;
 }
 
 export type TenantLookup =

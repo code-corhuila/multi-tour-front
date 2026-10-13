@@ -1,7 +1,8 @@
 :host {
   --mt-ink: #102a32;
-  --mt-teal: #147d73;
-  --mt-coral: #e9785d;
+  /* The tenant's colors (tenant shell) over the mockup look, which stays when the company chose none. */
+  --mt-teal: var(--accent-strong, #147d73);
+  --mt-coral: var(--accent, #e9785d);
   --mt-sand: #efe8de;
   --mt-warm-white: #faf9f6;
   --mt-slate: #627177;
@@ -60,7 +61,7 @@ img { display: block; }
 .mth-arrow { display: inline-block; transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1); }
 .mth-btn-primary { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding-inline: 18px; background: var(--mt-coral); border: 1px solid var(--mt-coral); border-radius: 5px; font-size: 0.85rem; font-weight: 700; transition: background-color 180ms ease, border-color 180ms ease; }
 @media (min-width: 860px) { .mth-btn-primary { height: 42px; padding-inline: 20px; } }
-.mth-btn-primary:hover { background: #d9694f; border-color: #d9694f; }
+.mth-btn-primary:hover { background: var(--accent-strong, #d9694f); border-color: var(--accent-strong, #d9694f); }
 .mth-btn-primary:hover .mth-arrow, .mth-btn-detalle:hover .mth-arrow { transform: translateX(3px); }
 .mth-btn-secondary-link { display: inline-flex; align-items: center; gap: 6px; padding-bottom: 2px; border-bottom: 1px solid var(--mt-line); font-size: 0.85rem; font-weight: 600; transition: color 180ms ease, border-color 180ms ease; }
 .mth-btn-secondary-link:hover { color: var(--mt-teal); border-color: var(--mt-teal); }
@@ -142,7 +143,7 @@ article:hover .mth-destino-media { transform: scale(1.02); }
 .mth-empresarial-title { margin: 0 0 10px; max-width: 22ch; font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(1.4rem, 1.2rem + 1.2vw, 2rem); color: #fff; }
 .mth-empresarial-desc { margin: 0 0 22px; max-width: 48ch; font-size: 0.9rem; color: #b9c7c3; }
 .mth-btn-empresarial { display: inline-flex; align-items: center; height: 42px; padding-inline: 22px; background: var(--mt-coral); border-radius: 6px; color: #1c1108; font-size: 0.88rem; font-weight: 700; transition: background-color 180ms ease; }
-.mth-btn-empresarial:hover { background: #d9694f; }
+.mth-btn-empresarial:hover { background: var(--accent-strong, #d9694f); }
 .mth-empresarial-panel a:focus-visible { outline-color: #fff; }
 
 /* Footer */
