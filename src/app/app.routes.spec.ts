@@ -41,6 +41,12 @@ describe('route table', () => {
     expect(routes.at(-1)?.path).toBe('**');
   });
 
+  it('U-platform_scope_sets_no_tenant_colors: only the tenant link has the shell that paints them', () => {
+    expect(route('platform')?.component).toBeUndefined();
+    expect(route('ingresar')?.component).toBeUndefined();
+    expect(route('t/:identifier')?.component?.name).toBe('TenantShellComponent');
+  });
+
   it('keeps the old sign-in path as an alias of ingresar under the tenant and the platform', () => {
     for (const parent of ['t/:identifier', 'platform']) {
       const alias = (route(parent)?.children ?? []).find((c) => c.path === 'sign-in');

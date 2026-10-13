@@ -13,7 +13,14 @@ function render(tenant: TenantLookup) {
   return fixture.nativeElement as HTMLElement;
 }
 
-const profile = (tenantStatus: 'ACTIVE' | 'INACTIVE') => ({ identifier: 'acme', commercialName: 'Acme Tours', tenantStatus });
+const profile = (tenantStatus: 'ACTIVE' | 'INACTIVE', visualIdentity?: { primaryColor: string; secondaryColor: string } | null) => ({
+  identifier: 'acme',
+  commercialName: 'Acme Tours',
+  tenantStatus,
+  ...(visualIdentity === undefined ? {} : { visualIdentity }),
+});
+
+const COLORS = { primaryColor: '#c0392b', secondaryColor: '#7b241c' };
 
 describe('TenantShellComponent', () => {
   it('shows a clear page for an unknown tenant and mounts nothing', () => {
@@ -40,5 +47,26 @@ describe('TenantShellComponent', () => {
     expect(el.querySelector('h2')).toBeNull();
     expect(el.textContent).not.toContain('Acme Tours');
     expect(el.getAttribute('data-theme')).toBe('acme');
+  });
+
+  it('U-the_host_sets_the_accent_variables_of_the_profile_for_every_portal_below', () => {
+    const el = render({ state: 'active', profile: profile('ACTIVE', COLORS) });
+    expect(el.style.getPropertyValue('--accent')).toBe('#c0392b');
+    expect(el.style.getPropertyValue('--accent-strong')).toBe('#7b241c');
+    expect(el.style.getPropertyValue('--accent-soft')).toContain('#c0392b');
+  });
+
+  it('U-the_host_sets_no_variable_without_visual_identity_or_with_a_malformed_one', () => {
+    for (const visualIdentity of [undefined, null, { primaryColor: 'red', secondaryColor: '#7b241c' }]) {
+      const el = render({ state: 'active', profile: profile('ACTIVE', visualIdentity) });
+      expect(el.style.getPropertyValue('--accent')).toBe('');
+      expect(el.style.getPropertyValue('--accent-strong')).toBe('');
+      TestBed.resetTestingModule();
+    }
+  });
+
+  it('U-an_inactive_or_unknown_tenant_paints_nothing', () => {
+    const el = render({ state: 'inactive', profile: profile('INACTIVE', COLORS) });
+    expect(el.style.getPropertyValue('--accent')).toBe('');
   });
 });
