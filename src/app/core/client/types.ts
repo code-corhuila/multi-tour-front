@@ -35,6 +35,10 @@ export interface MountProps {
   scope?: Scope;
   /** SPA navigation owned by the container: the portal never reloads the page (the session lives in memory). */
   navigate?: (path: string) => void;
+  /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
+  visualIdentity?: { primaryColor: string; secondaryColor: string } | null;
+  /** The portal calls it with the colors the service returned after a save; the container applies them live. */
+  onVisualIdentityChange?: (colors: { primaryColor: string; secondaryColor: string }) => void;
 }
 
 /** One field-level problem of the envelope's `details`, e.g. `{field: 'email', message: 'already in use'}`. */

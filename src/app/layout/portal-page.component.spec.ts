@@ -169,12 +169,15 @@ describe('PortalPageComponent', () => {
     expect('onVisualIdentityChange' in platform.mount.mock.calls[0][1]).toBe(false);
   });
 
-  it('U-a_tenant_without_colors_gets_null_and_a_portal_that_ignores_the_props_still_mounts', async () => {
+  it('U-a_tenant_without_colors_gets_null', async () => {
     const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileColors: null });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
     expect(mount.mock.calls[0][1].visualIdentity).toBeNull();
-    const bare = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
-    await until(bare.fixture, () => expect(bare.mount).toHaveBeenCalledTimes(1));
-    expect('visualIdentity' in bare.mount.mock.calls[0][1]).toBe(false);
+  });
+
+  it('U-portal_without_the_new_props_still_mounts_when_no_shell_provides_them', async () => {
+    const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    expect('visualIdentity' in mount.mock.calls[0][1]).toBe(false);
   });
 });

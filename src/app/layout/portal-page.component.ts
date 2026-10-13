@@ -7,6 +7,7 @@ import { MountProps, Scope, Session } from '../core/client/types';
 import { RemoteUnavailableComponent } from '../core/errors/remote-unavailable.component';
 import { RemoteHostComponent } from '../core/federation/remote-host.component';
 import { MANIFEST_LOADER } from '../core/federation/remote-loader';
+import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
 
 export const IDENTITY_PORTAL = 'identity-audit-portal';
@@ -46,6 +47,8 @@ export class PortalPageComponent {
   private readonly router = inject(Router);
   private readonly client = inject(CONTAINER_CLIENT);
   private readonly loadManifest = inject(MANIFEST_LOADER);
+  /** Provided by the tenant shell only: the platform and the general login have no tenant colors. */
+  private readonly identity = inject(TenantVisualIdentity, { optional: true });
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
   private readonly manifest = signal<Record<string, string> | 'loading' | 'failed'>('loading');
 
@@ -96,6 +99,15 @@ export class PortalPageComponent {
     const navigate = (path: string) => {
       if (safeReturnUrl(path)) void this.router.navigateByUrl(path);
     };
-    return { ...props, session, navigate };
+    const colors = this.identity && scope === undefined && identifier !== undefined ? this.identity : null;
+    return {
+      ...props,
+      session,
+      navigate,
+      ...(colors && {
+        visualIdentity: colors.current(),
+        onVisualIdentityChange: (value) => colors.change(value),
+      }),
+    };
   }
 }
