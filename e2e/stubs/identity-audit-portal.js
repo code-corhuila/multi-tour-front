@@ -7,6 +7,12 @@ export function mount(element, props) {
   element.innerHTML = `<p>Stub sign-in</p><button type="button">${general ? 'Sign in for acme' : 'Sign in'}</button>${announce ? '<button type="button" data-colors>Save colors</button>' : ''}`;
   const button = element.querySelector('button');
   const colors = element.querySelector('[data-colors]');
+  if (typeof props.commercialName === 'string') {
+    const name = document.createElement('p');
+    name.setAttribute('data-company', '');
+    name.textContent = props.commercialName;
+    element.prepend(name);
+  }
   const save = () => props.onVisualIdentityChange({ primaryColor: '#112233', secondaryColor: '#445566' });
   colors?.addEventListener('click', save);
   const answer = { accessToken: 'stub.stub.stub', expiresIn: 900 };

@@ -58,14 +58,17 @@ The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, 
 
 ### Visual identity (HU-IDA-003)
 
-Two more optional fields, set only on a tenant mount (never on the platform or the general login):
+Three more optional fields, set only on a tenant mount (never on the platform or the general login):
 
 | Field | Meaning |
 |---|---|
 | `visualIdentity` | The company's current colors `{ primaryColor, secondaryColor }` (`#RRGGBB`), or `null` when it chose none. The container already paints them as `--accent`, `--accent-strong` and `--accent-soft` on the tenant's area, so the portal reads those variables and paints nothing by itself |
+| `commercialName` | The commercial name of the company (non-blank string) so a screen can show it; omitted on the platform and the general login |
 | `onVisualIdentityChange(colors)` | The portal calls it with the colors the service returned after a save; the container validates them (a malformed pair is ignored) and updates the variables live, with no reload |
 
+`visualIdentity` is the value at mount time; after a save, read the CSS variables or use the colors the service returned.
 A portal that ignores both keeps mounting as before.
+
 ## Assets and licenses
 
 Everything is served from this origin (no CDN). Fonts and photos live in `public/assets/`:

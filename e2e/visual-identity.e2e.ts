@@ -43,3 +43,10 @@ test('E2E general_login_and_platform_get_no_visual_identity_callback', async ({ 
   await expect(page.getByText('Stub sign-in')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save colors' })).toHaveCount(0);
 });
+test('E2E tenant_portal_receives_the_commercial_name_and_the_platform_does_not', async ({ page }) => {
+  await page.goto('/t/acme/ingresar');
+  await expect(page.locator('[data-company]')).toHaveText('Acme Tours');
+  await page.goto('/platform');
+  await expect(page.getByText('Stub sign-in')).toBeVisible();
+  await expect(page.locator('[data-company]')).toHaveCount(0);
+});

@@ -35,6 +35,8 @@ export interface MountProps {
   scope?: Scope;
   /** SPA navigation owned by the container: the portal never reloads the page (the session lives in memory). */
   navigate?: (path: string) => void;
+  /** The commercial name of the company, for screens that show it; tenant mounts only, omitted when blank. */
+  commercialName?: string;
   /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
   visualIdentity?: { primaryColor: string; secondaryColor: string } | null;
   /** The portal calls it with the colors the service returned after a save; the container applies them live. */

@@ -16,7 +16,7 @@ interface Options {
   manifest?: Record<string, string> | Error;
   /** Provide the state the tenant shell would provide, started from this profile value. */
   profileColors?: unknown;
-  /** The commercial name of the resolved tenant profile (route data 	enant, as the shell's resolver sets it). */
+  /** The commercial name of the resolved tenant profile (route data, as the tenant shell's resolver sets it). */
   commercialName?: unknown;
 }
 
