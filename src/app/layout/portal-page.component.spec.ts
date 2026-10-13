@@ -16,14 +16,23 @@ interface Options {
   manifest?: Record<string, string> | Error;
   /** Provide the state the tenant shell would provide, started from this profile value. */
   profileColors?: unknown;
+  /** The commercial name of the resolved tenant profile (route data 	enant, as the shell's resolver sets it). */
+  commercialName?: unknown;
 }
 
-function setup({ params = {}, remote, scope, returnUrl, profileColors, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
+function setup({ params = {}, remote, scope, returnUrl, profileColors, commercialName, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
   const mount = vi.fn();
   const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
   const route = {
     paramMap: of(convertToParamMap(params)),
-    snapshot: { data: remote ? { remote, ...(scope ? { scope } : {}) } : {}, queryParamMap: convertToParamMap(returnUrl ? { returnUrl } : {}) },
+    snapshot: {
+      data: remote
+        ? {
+            remote,
+            ...(scope ? { scope } : {}),
+            ...(commercialName === undefined ? {} : { tenant: { state: 'active', profile: { identifier: 'acme', commercialName, tenantStatus: 'ACTIVE' } } }),
+          }
+        : {}, queryParamMap: convertToParamMap(returnUrl ? { returnUrl } : {}) },
   };
   TestBed.configureTestingModule({
     providers: [
@@ -179,5 +188,36 @@ describe('PortalPageComponent', () => {
     const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
     expect('visualIdentity' in mount.mock.calls[0][1]).toBe(false);
+  });
+
+  it('U-portal_receives_the_commercial_name_of_the_tenant_when_it_is_not_blank', async () => {
+    const { fixture, mount } = setup({
+      params: { identifier: 'acme' },
+      remote: 'identity-audit-portal',
+      profileColors: null,
+      commercialName: 'Acme Tours',
+    });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    expect(mount.mock.calls[0][1].commercialName).toBe('Acme Tours');
+  });
+
+  it('U-commercial_name_is_omitted_when_blank_or_not_a_string', async () => {
+    for (const bad of ['   ', '', 42, null]) {
+      const { fixture, mount } = setup({
+        params: { identifier: 'acme' },
+        remote: 'identity-audit-portal',
+        profileColors: null,
+        commercialName: bad,
+      });
+      await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+      expect('commercialName' in mount.mock.calls[0][1], String(bad)).toBe(false);
+      TestBed.resetTestingModule();
+    }
+  });
+
+  it('U-platform_and_general_mounts_get_no_commercial_name', async () => {
+    const { fixture, mount } = setup({ remote: 'identity-audit-portal', profileColors: null, commercialName: 'Acme Tours' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    expect('commercialName' in mount.mock.calls[0][1]).toBe(false);
   });
 });
