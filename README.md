@@ -1,25 +1,56 @@
 # multi-tour-front
 
-> Front-end shell: packages the domain UIs
+## What it is
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+The Angular 21 container (shell) of the Multitour interface. It will own the HTTP client and the
+session, and mount each domain portal. It routes `/` (home), `/platform`, `/t/<identifier>` (resolves the tenant's public profile first) and `**` (the common 404), guards `areas/<remote>` and mounts each portal from `federation.manifest.json`.
 
-## Branching
+## How to start it
 
-Three permanent branches. **None of them accepts a direct commit** — you enter through a child
-branch and leave through a Pull Request.
+Node 22 LTS or 24. Copy `.env.example` to `.env`, then:
 
-```
-develop  <--PR--  feat/... fix/... chore/...
-qa       <--PR--  qa/...
-main     <--PR--  release/...  hotfix/...
+```bash
+npm ci
+npm start    # http://localhost:4200
 ```
 
-Promotion happens **by re-application** (`git cherry-pick -x`), never by merging one permanent
-branch into another: `merge develop -> qa` and `merge qa -> main` do not exist in this model.
+## Where the data is
 
-`main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
-rule.
+Nowhere: this repository holds no data. It only calls the API through the gateway.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+## How to test it
+
+```bash
+npm test     # Vitest through the Angular unit-test builder
+npm run build
+npm run e2e  # three Playwright checks on the development build (run npx playwright install chromium once)
+```
+
+The development sign-in (`/dev-sign-in`, a token pasted from `dev-token.sh`) exists only in the `development` configuration; the production build swaps it out.
+
+The CI runs `npm ci`, `npm run build`, `npm test` and the E2E checks on every pull request to `develop` and `qa`.
+
+## Assets and licenses
+
+Everything is served from this origin (no CDN). Fonts and photos live in `public/assets/`:
+
+- `fonts/fraunces.woff2` and `fonts/manrope.woff2`: latin subset, variable files, declared in `src/styles.css`. Fraunces and Manrope are under the SIL Open Font License 1.1.
+- `mountain-hero.jpg`, `destino-sendero-del-condor.jpg`, `destino-cascadas-de-iraka.jpg`, `destino-bahia-esmeralda.jpg`: photos from Unsplash, under the Unsplash License (free use, no attribution required). The Mockup's demo content of the landing uses them.
+
+## The production image
+
+`Dockerfile` builds the shell (`npm ci`, `npm run build`) and serves it with `nginxinc/nginx-unprivileged` (non-root, port 8080, versions pinned). `nginx/default.conf` sets the security headers (CSP, `nosniff`, frame and referrer policies), falls back to `index.html` for the router, and never caches `federation.manifest.json` or anything under `/portals/`.
+
+```bash
+docker build -t multi-tour-front .
+docker run --rm -p 8080:8080 multi-tour-front
+```
+
+### How the identity-audit portal reaches production
+
+The manifest in production (`public/federation.manifest.json`) points to `portals/identity-audit-portal.js`, a file served from the same origin as the shell. The portal repository builds its single ES module; copy that file to `portals/identity-audit-portal.js` in this repository **before** `docker build` (the folder `portals/` is empty in Git on purpose, its content is ignored). Without the file the image still starts and that area answers 404, which the shell shows as "not available right now". A new portal build only needs the file replaced and the image rebuilt; browsers never cache the manifest or the module.
+
+### Checks
+
+- `scripts/check-main-build.sh [dir]` (`V·main_build_has_no_dev_sign_in`): the production bundle has no development sign-in and no stub remotes. The CI also proves the check fails on a development build.
+- `scripts/check-image.sh <image>`: runs the image and checks headers, the uncached manifest, the 404 of a missing portal, the router fallback and the non-root user.

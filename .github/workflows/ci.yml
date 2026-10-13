@@ -1,0 +1,41 @@
+name: ci
+
+# Builds the shell and runs its tests. Pull requests toward develop and qa only, to save the
+# course's automation minutes. No schedule.
+on:
+  pull_request:
+    branches: [develop, qa]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Production build has no development sign-in
+        run: bash scripts/check-main-build.sh
+      - name: The check fails on a development build (it must detect what it guards)
+        run: |
+          npx ng build --configuration development --output-path dist/dev
+          test -f dist/dev/browser/index.html
+          ! bash scripts/check-main-build.sh dist/dev/browser
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: Build the production image and check it
+        run: |
+          docker build -t multi-tour-front:ci .
+          bash scripts/check-image.sh multi-tour-front:ci

@@ -1,0 +1,11 @@
+.env
+*.pem
+node_modules/
+dist/
+.angular/
+out-tsc/
+test-results/
+playwright-report/
+# Built portal modules are copied here for the image; only the folder is versioned.
+portals/*
+!portals/.gitkeep
