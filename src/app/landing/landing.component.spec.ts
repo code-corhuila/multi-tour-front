@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+// @ts-expect-error Node fs is available at runtime; this workspace has no @types/node.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LandingComponent } from './landing.component';
 
@@ -90,5 +92,12 @@ describe('LandingComponent', () => {
     }
     expect(hrefs(el, 'Equipo del operador')).toContain('/ingresar?tab=operador');
     expect(hrefs(el, 'Acceder al equipo del operador')).toEqual(['/ingresar?tab=operador']);
+  });
+
+  it('U-landing_takes_its_accents_from_the_tenant_variables_with_the_platform_look_as_default', () => {
+    const css = readFileSync('src/app/landing/landing.component.css', 'utf8');
+    expect(css).toContain('--mt-teal: var(--accent-strong, #147d73)');
+    expect(css).toContain('--mt-coral: var(--accent, #e9785d)');
+    expect(css).not.toMatch(/#147d73;\s*$/m);
   });
 });
