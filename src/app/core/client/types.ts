@@ -15,15 +15,26 @@ export interface Session {
   readonly roles: string[];
   /** Set when the token is a temporary or restricted credential: the portal then routes to the matching screen. */
   readonly access?: 'password-change' | 'restricted';
-  open(answer: unknown): void;
+  /**
+   * Opens the session with a sign-in answer. In the general scope the portal passes the identifier typed in the
+   * login and the session is kept under it; in the other scopes the identifier is ignored.
+   */
+  open(answer: unknown, identifier?: string): void;
   close(): void;
 }
 
+/** Where the portal is mounted: the general login (/ingresar), the platform, or a tenant link. */
+export type Scope = 'general' | 'platform' | 'tenant';
+
 export interface MountProps {
-  /** The tenant identifier of the link; omitted for the platform. */
+  /** The tenant identifier of the link; omitted for the platform and the general login. */
   identifier?: string;
   apiClient: ApiClient;
   session: Session;
+  /** Optional for portals written before ADR-007 was extended; the container always sets it. */
+  scope?: Scope;
+  /** SPA navigation owned by the container: the portal never reloads the page (the session lives in memory). */
+  navigate?: (path: string) => void;
 }
 
 /** One field-level problem of the envelope's `details`, e.g. `{field: 'email', message: 'already in use'}`. */
