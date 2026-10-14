@@ -26,6 +26,14 @@ export interface Session {
 /** Where the portal is mounted: the general login (/ingresar), the platform, or a tenant link. */
 export type Scope = 'general' | 'platform' | 'tenant';
 
+/** An area of a portal, possibly another one than the caller (HU-FRT-001 amendment). The container owns the address. */
+export interface PortalTarget {
+  /** Key of the portal in public/federation.manifest.json. */
+  portal: string;
+  /** Area key declared by that portal. */
+  area: string;
+}
+
 export interface MountProps {
   /** The tenant identifier of the link; omitted for the platform and the general login. */
   identifier?: string;
@@ -33,8 +41,12 @@ export interface MountProps {
   session: Session;
   /** Optional for portals written before ADR-007 was extended; the container always sets it. */
   scope?: Scope;
-  /** SPA navigation owned by the container: the portal never reloads the page (the session lives in memory). */
-  navigate?: (path: string) => void;
+  /**
+   * SPA navigation owned by the container: the portal never reloads the page (the session lives in memory).
+   * A text is a path of this application (the identity portal's use); a `{ portal, area }` opens an area of
+   * another portal without the caller knowing any address. Never throws; a target the roles cannot use is ignored.
+   */
+  navigate?: (target: string | PortalTarget) => void;
   /** The commercial name of the company, for screens that show it; tenant mounts only, omitted when blank. */
   commercialName?: string;
   /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
