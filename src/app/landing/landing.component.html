@@ -1,0 +1,140 @@
+<a class="skip-link" href="" (click)="skip($event)">Saltar al contenido principal</a>
+
+<header class="mth-header">
+  <div class="mt-container mth-header-inner">
+    <a class="mth-brand" [routerLink]="home">Multi Tour</a>
+    <div class="mth-header-actions">
+      <a class="mth-link-ghost" [routerLink]="signIn" [queryParams]="operatorQuery">Equipo del operador</a>
+      <a class="mth-btn-login" [routerLink]="signIn">Ingresar</a>
+    </div>
+  </div>
+</header>
+
+<div id="contenido" tabindex="-1">
+  <div class="mth-scroll-sentinel" aria-hidden="true"></div>
+
+  <section class="mth-hero" aria-labelledby="travel-home-title">
+    <div class="mt-container mth-hero-grid">
+      <div class="mth-hero-copy">
+        <span class="mth-eyebrow">{{ company }}</span>
+        <h1 id="travel-home-title" class="mth-h1">Destinos que valen la pena <span class="mth-h1-accent">vivir</span></h1>
+        <p class="mth-lead">Explora experiencias únicas y encuentra tu próxima aventura.</p>
+        <div class="mth-hero-ctas">
+          <a class="mth-btn-primary" [routerLink]="signIn">Ver catálogo <span class="mth-arrow" aria-hidden="true">→</span></a>
+          <a class="mth-btn-secondary-link" [routerLink]="signIn">Descubrir experiencias <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+      <div class="mth-hero-media">
+        <img class="mth-hero-img" src="/assets/mountain-hero.jpg" alt="Cordillera iluminada por la luz dorada del atardecer, vista desde un sendero de montaña" />
+      </div>
+    </div>
+  </section>
+
+  <section class="mth-benefits" aria-labelledby="benefits-title">
+    <h2 id="benefits-title" class="mth-sr-only">Por qué elegir Multi Tour</h2>
+    <div class="mt-container mth-benefits-grid">
+      <article class="mth-benefit mth-reveal">
+        <span class="mth-benefit-index" aria-hidden="true">01</span>
+        <span class="mth-benefit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5 13 13l-3.5 1.5L11 11z"/></svg>
+        </span>
+        <h3 class="mth-benefit-title">Explora experiencias</h3>
+        <p class="mth-benefit-desc">Descubre tours, hospedaje y gastronomía disponibles en el catálogo del operador.</p>
+      </article>
+      <article class="mth-benefit mth-reveal">
+        <span class="mth-benefit-index" aria-hidden="true">02</span>
+        <span class="mth-benefit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>
+        </span>
+        <h3 class="mth-benefit-title">Reserva de forma sencilla</h3>
+        <p class="mth-benefit-desc">Elige fecha y cupo, confirma tu pago y recibe tu reserva en minutos.</p>
+      </article>
+      <article class="mth-benefit mth-reveal">
+        <span class="mth-benefit-index" aria-hidden="true">03</span>
+        <span class="mth-benefit-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+        </span>
+        <h3 class="mth-benefit-title">Gestiona tu viaje</h3>
+        <p class="mth-benefit-desc">Consulta tus reservas, pagos y soporte desde tu cuenta en cualquier momento.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="mth-destinos" aria-labelledby="destacados-title">
+    <div class="mt-container">
+      <div class="mth-destinos-header mth-reveal">
+        <div>
+          <h2 id="destacados-title" class="mth-h2">Destinos destacados</h2>
+          <p class="mth-destinos-sub">Contenido de demostración de la plantilla: cada operador mostrará aquí sus propias experiencias.</p>
+        </div>
+        <a class="mth-link-catalog" [routerLink]="signIn">Ver todo el catálogo <span aria-hidden="true">→</span></a>
+      </div>
+
+      <div class="mth-destinos-layout">
+        <article class="mth-destino-principal mth-reveal">
+          <div class="mth-frame mth-frame-lg"><img class="mth-destino-media" src="/assets/destino-sendero-del-condor.jpg" alt="" /></div>
+          <div class="mth-destino-principal-body">
+            <h3>Sendero del Cóndor</h3>
+            <p>3 días · trekking de montaña</p>
+            <div class="mth-destino-footer-row">
+              <div><small>Desde</small><strong>$380.000</strong></div>
+              <a class="mth-btn-detalle" [routerLink]="signIn">Ver detalle <span class="mth-arrow" aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </article>
+
+        <div class="mth-destinos-secundarios">
+          <article class="mth-destino-secundario mth-reveal">
+            <div class="mth-frame"><img class="mth-destino-media" src="/assets/destino-cascadas-de-iraka.jpg" alt="" /></div>
+            <div class="mth-destino-secundario-body">
+              <h4>Cascadas de Iraka</h4>
+              <p class="mth-destino-secundario-note">5 días · naturaleza y río</p>
+              <div class="mth-destino-secundario-foot">
+                <span>Desde $620.000</span>
+                <a [routerLink]="signIn">Ver detalle <span class="mth-arrow" aria-hidden="true">→</span></a>
+              </div>
+            </div>
+          </article>
+          <article class="mth-destino-secundario mth-reveal">
+            <div class="mth-frame"><img class="mth-destino-media" src="/assets/destino-bahia-esmeralda.jpg" alt="" /></div>
+            <div class="mth-destino-secundario-body">
+              <h4>Bahía Esmeralda</h4>
+              <p class="mth-destino-secundario-note">7 días · costa y buceo</p>
+              <div class="mth-destino-secundario-foot">
+                <span>Desde $890.000</span>
+                <a [routerLink]="signIn">Ver detalle <span class="mth-arrow" aria-hidden="true">→</span></a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mth-empresarial" aria-labelledby="business-title">
+    <div class="mth-empresarial-panel mth-reveal">
+      <div class="mth-empresarial-ring" aria-hidden="true"></div>
+      <div class="mth-empresarial-inner">
+        <span class="mth-empresarial-eyebrow">Equipo del operador</span>
+        <h2 id="business-title" class="mth-empresarial-title">¿Formas parte del equipo de un operador?</h2>
+        <p class="mth-empresarial-desc">Accede al espacio de gestión de tu empresa.</p>
+        <a class="mth-btn-empresarial" [routerLink]="signIn" [queryParams]="operatorQuery">Acceder al equipo del operador</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer class="mth-footer">
+  <div class="mt-container mth-footer-grid">
+    <span class="mth-footer-brand">Multi Tour</span>
+    <nav class="mth-footer-links" aria-label="Enlaces">
+      <a [routerLink]="signIn">Tours</a>
+      <a [routerLink]="signIn">Alojamiento</a>
+      <a [routerLink]="signIn">Gastronomía</a>
+      <a [routerLink]="signIn">Ingresar</a>
+    </nav>
+  </div>
+  <div class="mt-container">
+    <p class="mth-footer-bottom">© 2026 Multi Tour. Plataforma para operadores de turismo.</p>
+  </div>
+</footer>
