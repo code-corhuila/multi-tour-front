@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { createContainerClient } from '../core/client/container';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
+import { answer, jwt } from '../core/client/test-helpers';
 import { MANIFEST_LOADER, REMOTE_IMPORTER } from '../core/federation/remote-loader';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { PortalPageComponent } from './portal-page.component';
@@ -219,5 +220,27 @@ describe('PortalPageComponent', () => {
     const { fixture, mount } = setup({ remote: 'identity-audit-portal', profileColors: null, commercialName: 'Acme Tours' });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
     expect('commercialName' in mount.mock.calls[0][1]).toBe(false);
+  });
+
+  it('U·container_passes_display_name_when_the_session_has_it (tenant mount)', async () => {
+    const { fixture, mount, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const { session } = mount.mock.calls[0][1];
+    expect(session.displayName).toBeUndefined();
+    client.store.of('acme').open(answer(jwt(['CLIENT'], { displayName: 'Ana Pérez' })));
+    expect(session.displayName).toBe('Ana Pérez');
+    client.store.of('acme').close();
+  });
+
+  it('U·the_general_login_session_follows_the_name_of_the_session_it_opens', async () => {
+    const { fixture, mount, client } = setup({ remote: 'identity-audit-portal', scope: 'general' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const { session } = mount.mock.calls[0][1];
+    expect(session.displayName).toBeUndefined();
+    session.open(answer(jwt(['CLIENT'], { displayName: 'Ana Pérez' })), 'acme');
+    expect(session.displayName).toBe('Ana Pérez');
+    session.close();
+    expect(session.displayName).toBeUndefined();
+    client.store.of('acme').close();
   });
 });
