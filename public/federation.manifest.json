@@ -1,4 +1,8 @@
 {
   "identity-audit-portal": "portals/identity-audit-portal.js",
-  "commercial-reservation-portal": "portals/commercial-reservation-portal.js"
+  "commercial-reservation-portal": "portals/commercial-reservation-portal.js",
+  "cash-reporting-portal": {
+    "url": "portals/cash-reporting-portal.js",
+    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER", "ACCOUNTANT", "ANALYST"]
+  }
 }
