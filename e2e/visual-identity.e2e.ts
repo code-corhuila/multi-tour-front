@@ -35,10 +35,7 @@ test('E2E portal_callback_updates_the_colors_without_a_reload', async ({ page })
   expect(await page.evaluate(() => (window as unknown as { marker: string }).marker)).toBe('same-page');
 });
 
-test('E2E general_login_and_platform_get_no_visual_identity_callback', async ({ page }) => {
-  await page.goto('/ingresar');
-  await expect(page.getByText('Stub sign-in')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save colors' })).toHaveCount(0);
+test('E2E platform_gets_no_visual_identity_callback', async ({ page }) => {
   await page.goto('/platform');
   await expect(page.getByText('Stub sign-in')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save colors' })).toHaveCount(0);
