@@ -13,8 +13,10 @@ export const TEST_MANIFEST: Record<string, string> = JSON.parse(
 );
 
 /** The manifest the image ships (`public/`), with the modules copied into `portals/`. */
-export const SHIPPED_MANIFEST: Record<string, string> = JSON.parse(
-  readFileSync(join(E2E, '..', 'public', 'federation.manifest.json'), 'utf8'),
+export const SHIPPED_MANIFEST: Record<string, string> = Object.fromEntries(
+  Object.entries(
+    JSON.parse(readFileSync(join(E2E, '..', 'public', 'federation.manifest.json'), 'utf8')) as Record<string, string | { url: string }>,
+  ).map(([name, entry]) => [name, typeof entry === 'string' ? entry : entry.url]),
 );
 
 export const ACME = { identifier: 'acme', commercialName: 'Acme Tours', tenantStatus: 'ACTIVE' };
