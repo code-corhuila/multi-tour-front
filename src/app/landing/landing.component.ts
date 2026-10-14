@@ -22,10 +22,10 @@ export class LandingComponent {
   /** The company of the link, from the profile the resolver loaded; generic when it has no commercial name. */
   protected readonly company = this.commercialName();
 
-  /** No identifier: the root welcome, whose ways in lead to the general login. */
+  /** No identifier: the root welcome, whose ways in lead to the login of the assumed company. */
   private readonly generic = this.identifier === '';
   protected readonly home = this.generic ? '/' : `/t/${this.identifier}`;
-  protected readonly signIn = this.generic ? '/ingresar' : `/t/${this.identifier}/ingresar`;
+  protected readonly signIn = this.generic ? '/t/travesia-natural/ingresar' : `/t/${this.identifier}/ingresar`;
   protected readonly operatorQuery = { tab: 'operador' };
 
   constructor() {
