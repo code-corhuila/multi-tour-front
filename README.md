@@ -75,6 +75,7 @@ Everything is served from this origin (no CDN). Fonts and photos live in `public
 
 - `fonts/fraunces.woff2` and `fonts/manrope.woff2`: latin subset, variable files, declared in `src/styles.css`. Fraunces and Manrope are under the SIL Open Font License 1.1.
 - `mountain-hero.jpg`, `destino-sendero-del-condor.jpg`, `destino-cascadas-de-iraka.jpg`, `destino-bahia-esmeralda.jpg`: photos from Unsplash, under the Unsplash License (free use, no attribution required). The Mockup's demo content of the landing uses them.
+- `alojamiento-asociado.jpg` (a hotel) and `restaurante-asociado.jpg` (a restaurant): the photos of the associated lodging and food establishments, the same files the landing mockup uses (`landing/img/`). The licence of their source is still to be confirmed before production; they are demo content.
 
 ## The production image
 
