@@ -36,6 +36,12 @@ function accessOf(payload: Record<string, unknown>): Access | undefined {
   return claim === 'password-change' ? claim : 'restricted';
 }
 
+/** The name the token may carry; blank or non-text means the container does not know it. */
+function displayNameOf(payload: Record<string, unknown>): string | undefined {
+  const claim = payload['displayName'];
+  return typeof claim === 'string' && claim.trim() !== '' ? claim.trim() : undefined;
+}
+
 function rolesOf(payload: Record<string, unknown>): string[] {
   const roles = payload['roles'];
   return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === 'string') : [];
@@ -59,6 +65,7 @@ export class TenantSession implements Session {
   token: string | null = null;
   roles: string[] = [];
   access: Access | undefined;
+  displayName: string | undefined;
   private refreshToken: string | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
   /** Bumped by every open and close, so a renewal that finishes after either one is dropped. */
@@ -74,6 +81,7 @@ export class TenantSession implements Session {
     this.refreshToken = refreshToken;
     this.roles = rolesOf(payload);
     this.access = accessOf(payload);
+    this.displayName = displayNameOf(payload);
     this.timer = refreshToken
       ? setTimeout(() => void this.renew(), clamp(expiresIn * 1000 - RENEW_LEAD_MS, MIN_RENEW_MS, MAX_TIMER_MS))
       : setTimeout(() => this.close(), clamp(expiresIn * 1000, 0, MAX_TIMER_MS));
@@ -90,6 +98,7 @@ export class TenantSession implements Session {
     this.refreshToken = undefined;
     this.roles = [];
     this.access = undefined;
+    this.displayName = undefined;
   }
 
   private async renew(): Promise<void> {

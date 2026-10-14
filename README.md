@@ -89,6 +89,10 @@ docker run --rm -p 8080:8080 multi-tour-front
 
 The manifest in production (`public/federation.manifest.json`) points to `portals/identity-audit-portal.js`, a file served from the same origin as the shell. The portal repository builds its single ES module; copy that file to `portals/identity-audit-portal.js` in this repository **before** `docker build` (the folder `portals/` is empty in Git on purpose, its content is ignored). Without the file the image still starts and that area answers 404, which the shell shows as "not available right now". A new portal build only needs the file replaced and the image rebuilt; browsers never cache the manifest or the module.
 
+### How the cash-reporting portal reaches production
+
+The manifest entry `cash-reporting-portal` is `{ "url": "portals/cash-reporting-portal.js", "roles": [...] }`: `roles` (the five internal roles, never the final customer) only decides who may be sent there by another portal's `navigate`; the area itself and every request stay guarded by the portal and the service. In the cash portal repository run `npm ci` and `npm run build:module` and copy `dist/portal.js` to `portals/cash-reporting-portal.js` and `dist/portal.css` to `portals/cash-reporting-portal.css` (the module loads the stylesheet by that name, next to itself) **before** `docker build`. Without them that area answers 404 and the shell shows "not available right now".
+
 ### Checks
 
 - `scripts/check-main-build.sh [dir]` (`V·main_build_has_no_dev_sign_in`): the production bundle has no development sign-in and no stub remotes. The CI also proves the check fails on a development build.

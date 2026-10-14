@@ -52,6 +52,21 @@ describe('loadManifest', () => {
     expect(fetcher).toHaveBeenCalledWith('m.json', { cache: 'no-store' });
   });
 
+  it('U·manifest_entry_may_carry_the_roles_that_can_open_it', async () => {
+    const entry = { url: '/b.js', roles: ['ADMIN'] };
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ a: '/a.js', b: entry }) });
+    expect(await loadManifest('m.json', fetcher)).toEqual({ a: '/a.js', b: entry });
+  });
+
+  it('U·manifest_entry_with_bad_roles_or_an_unsafe_url_is_dropped', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const json = { x: { url: '/x.js', roles: 'ADMIN' }, y: { url: '/y.js', roles: [1] }, z: { url: 'https://evil.example/z.js' }, w: { roles: [] } };
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => json });
+    expect(await loadManifest('m.json', fetcher)).toEqual({});
+    expect(warn).toHaveBeenCalledTimes(4);
+    warn.mockRestore();
+  });
+
   it('rejects when the manifest cannot be fetched', async () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: false, status: 404 });
     await expect(loadManifest('m.json', fetcher)).rejects.toThrow();

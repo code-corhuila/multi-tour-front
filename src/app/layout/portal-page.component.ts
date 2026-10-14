@@ -3,10 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { safeReturnUrl } from '../core/auth/return-url';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
-import { MountProps, Scope, Session } from '../core/client/types';
+import { MountProps, PortalTarget, Scope, Session } from '../core/client/types';
 import { RemoteUnavailableComponent } from '../core/errors/remote-unavailable.component';
 import { RemoteHostComponent } from '../core/federation/remote-host.component';
-import { MANIFEST_LOADER } from '../core/federation/remote-loader';
+import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/federation/remote-loader';
 import { TenantLookup } from '../tenant/tenant.resolver';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
@@ -51,7 +51,7 @@ export class PortalPageComponent {
   /** Provided by the tenant shell only: the platform and the general login have no tenant colors. */
   private readonly identity = inject(TenantVisualIdentity, { optional: true });
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
-  private readonly manifest = signal<Record<string, string> | 'loading' | 'failed'>('loading');
+  private readonly manifest = signal<Record<string, ManifestEntry> | 'loading' | 'failed'>('loading');
 
   protected readonly view = computed<View>(() => {
     const manifest = this.manifest();
@@ -60,8 +60,10 @@ export class PortalPageComponent {
     const identifier = this.params().get('identifier') ?? undefined;
     if (manifest === 'loading') return { kind: 'loading' };
     if (manifest === 'failed') return { kind: 'unavailable', remote };
-    const url = Object.hasOwn(manifest, remote) ? manifest[remote] : undefined;
-    if (!url) return fixed ? { kind: 'unavailable', remote } : { kind: 'not-found' };
+    const url = Object.hasOwn(manifest, remote) ? entryUrl(manifest[remote]) : undefined;
+    // An area asked through `navigate` that the manifest does not list is "not available", not a mistyped address.
+    const asked = this.route.snapshot.queryParamMap.has('area');
+    if (!url) return fixed || asked ? { kind: 'unavailable', remote } : { kind: 'not-found' };
     const scope = this.route.snapshot.data['scope'] as Scope | undefined;
     return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: this.propsFor(identifier, scope) };
   });
@@ -85,6 +87,22 @@ export class PortalPageComponent {
     return typeof name === 'string' && name.trim() !== '' ? name.trim() : undefined;
   }
 
+  /**
+   * Opens an area of a portal by its manifest key; the address is built here and nowhere else. A target the
+   * session's roles cannot use is not opened; an unknown one goes to the unavailable notice of that area.
+   */
+  private openTarget(target: unknown, identifier: string | undefined, scope: Scope | undefined, session: Session): void {
+    const { portal, area } = (typeof target === 'object' && target !== null ? target : {}) as Partial<PortalTarget>;
+    if (typeof portal !== 'string' || portal === '' || typeof area !== 'string' || area === '' || scope === 'general') return;
+    const manifest = this.manifest();
+    if (typeof manifest !== 'string' && Object.hasOwn(manifest, portal)) {
+      const roles = entryRoles(manifest[portal]);
+      if (roles && !roles.some((role) => session.roles.includes(role))) return;
+    }
+    const commands = identifier === undefined ? ['/platform', 'areas', portal] : ['/t', identifier, 'areas', portal];
+    this.router.navigate(commands, { queryParams: { area } }).catch(() => undefined);
+  }
+
   /** After the portal opens a full session, the person goes back to the url the guard kept. */
   private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
     const props = this.client.propsFor(identifier, scope);
@@ -96,6 +114,9 @@ export class PortalPageComponent {
       get access() {
         return real.access;
       },
+      get displayName() {
+        return real.displayName;
+      },
       open: (answer, id) => {
         real.open(answer, id);
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
@@ -104,8 +125,10 @@ export class PortalPageComponent {
       close: () => real.close(),
     };
     // Only a path of this application: the portal moves around without a page load (the session is in memory).
-    const navigate = (path: string) => {
-      if (safeReturnUrl(path)) void this.router.navigateByUrl(path);
+    const navigate = (target: string | PortalTarget) => {
+      if (typeof target === 'string') {
+        if (safeReturnUrl(target)) void this.router.navigateByUrl(target);
+      } else this.openTarget(target, identifier, scope, real);
     };
     const colors = this.identity && scope === undefined && identifier !== undefined ? this.identity : null;
     const name = scope === undefined && identifier !== undefined ? this.commercialName() : undefined;
