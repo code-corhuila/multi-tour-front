@@ -138,4 +138,37 @@ describe('session', () => {
     expect(store.of().token).toBe(jwt(['PLATFORM']));
     store.of().close();
   });
+
+  it('U·container_passes_display_name_when_the_session_has_it', () => {
+    const session = new SessionStore(vi.fn()).of('acme');
+    session.open(answer(jwt(['CLIENT'], { displayName: '  Ana Pérez  ' })));
+    expect(session.displayName).toBe('Ana Pérez');
+    session.close();
+    expect(session.displayName).toBeUndefined();
+  });
+
+  it('U·container_omits_display_name_when_unknown', () => {
+    const session = new SessionStore(vi.fn()).of('acme');
+    for (const claims of [{}, { displayName: '' }, { displayName: '   ' }, { displayName: 42 }, { displayName: null }]) {
+      session.open(answer(jwt(['CLIENT'], claims)));
+      expect(session.displayName).toBeUndefined();
+    }
+    session.close();
+  });
+
+  it('U·no_name_in_web_storage', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    const log = vi.spyOn(console, 'log');
+    const warn = vi.spyOn(console, 'warn');
+    const session = new SessionStore(vi.fn()).of('acme');
+    session.open(answer(jwt(['CLIENT'], { displayName: 'Ana Pérez' })));
+    expect(session.displayName).toBe('Ana Pérez');
+    expect(setItem).not.toHaveBeenCalled();
+    expect(JSON.stringify({ ...localStorage })).not.toContain('Ana');
+    expect(JSON.stringify({ ...sessionStorage })).not.toContain('Ana');
+    expect(log).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    session.close();
+    vi.restoreAllMocks();
+  });
 });

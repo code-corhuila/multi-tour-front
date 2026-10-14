@@ -47,6 +47,9 @@ export function createContainerClient(options: { baseUrl: string; fetch?: typeof
       get access() {
         return current?.access;
       },
+      get displayName() {
+        return current?.displayName;
+      },
       open(answer, identifier) {
         if (typeof identifier !== 'string' || !isTenantIdentifier(identifier)) {
           throw new Error('the general login must open the session with a valid company identifier');

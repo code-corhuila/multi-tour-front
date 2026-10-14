@@ -15,6 +15,10 @@ export interface Session {
   readonly roles: string[];
   /** Set when the token is a temporary or restricted credential: the portal then routes to the matching screen. */
   readonly access?: 'password-change' | 'restricted';
+  /** Name to greet the person with. Absent when the container does not know it; kept in memory only (RN-FRT-17). */
+  readonly displayName?: string;
+  /** One or two uppercase letters for the avatar. Optional: when absent the portal derives them from `displayName` (DP-FRT-2). */
+  readonly initials?: string;
   /**
    * Opens the session with a sign-in answer. In the general scope the portal passes the identifier typed in the
    * login and the session is kept under it; in the other scopes the identifier is ignored.
