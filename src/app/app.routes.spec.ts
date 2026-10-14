@@ -33,12 +33,10 @@ describe('route table', () => {
     expect(route('platform')?.children?.[0]?.path).not.toBe('');
   });
 
-  it('shows the welcome at the root and mounts the general login at ingresar, ending in the 404', () => {
+  it('shows the welcome at the root and sends ingresar to the tenant login, ending in the 404', () => {
     expect(route('')?.component).toBe(LandingComponent);
-    const general = route('ingresar')?.children ?? [];
-    expect(general.at(-1)?.path).toBe('**');
-    expect(general.at(-1)?.data).toMatchObject({ remote: 'identity-audit-portal', scope: 'general' });
-    expect(general.at(-1)?.canActivate).toBeUndefined();
+    expect(route('ingresar')?.redirectTo).toBe('t/travesia-natural/ingresar');
+    expect(route('ingresar')?.children).toBeUndefined();
     expect(routes.at(-1)?.path).toBe('**');
   });
 
