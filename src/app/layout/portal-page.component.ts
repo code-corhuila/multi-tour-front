@@ -96,6 +96,9 @@ export class PortalPageComponent {
       get access() {
         return real.access;
       },
+      get displayName() {
+        return real.displayName;
+      },
       open: (answer, id) => {
         real.open(answer, id);
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
