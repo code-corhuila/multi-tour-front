@@ -16,13 +16,10 @@ const portalRoutes: Routes = [
 ];
 
 export const routes: Routes = [
-  // Without a tenant the landing is generic; its ways in lead to the general login.
+  // Without a tenant the landing is generic; its ways in lead to the login of the assumed company.
   { path: '', pathMatch: 'full', component: LandingComponent },
-  // The general login (tabs Cliente / Equipo del operador) is drawn by the identity portal.
-  {
-    path: 'ingresar',
-    children: [{ path: '**', component: PortalPageComponent, data: { remote: IDENTITY_PORTAL, scope: 'general' } }],
-  },
+  // Login and register live under the tenant link, never typed as a company (Jhon, 2026-10-13).
+  { path: 'ingresar', redirectTo: 't/travesia-natural/ingresar' },
   { path: 'platform', children: portalRoutes },
   {
     path: 't/:identifier',
