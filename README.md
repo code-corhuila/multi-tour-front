@@ -92,7 +92,11 @@ The manifest in production (`public/federation.manifest.json`) points to `portal
 
 ### How the cash-reporting portal reaches production
 
-The manifest entry `cash-reporting-portal` is `{ "url": "portals/cash-reporting-portal.js", "roles": [...] }`: `roles` (the five internal roles, never the final customer) only decides who may be sent there by another portal's `navigate`; the area itself and every request stay guarded by the portal and the service. In the cash portal repository run `npm ci` and `npm run build:module` and copy `dist/portal.js` to `portals/cash-reporting-portal.js` and `dist/portal.css` to `portals/cash-reporting-portal.css` (the module loads the stylesheet by that name, next to itself) **before** `docker build`. Without them that area answers 404 and the shell shows "not available right now".
+The manifest entry `cash-reporting-portal` is `{ "url": "portals/cash-reporting-portal.js", "roles": [...] }`: `roles` (the five internal roles, never the final customer) only decides who may be sent there by another portal's `navigate`; the area itself and every request stay guarded by the portal and the service. In the cash portal repository run `npm ci` and `npm run build:module` and copy `dist/portal.js` to `portals/cash-reporting-portal.js` and `dist/portal.css` to `portals/cash-reporting-portal.css` (the module loads the stylesheet by that name, next to itself) **before** `docker build`. Without them that area answers 404 and the shell shows "not available right now". For the commercial-reservation (02) and cash-reporting (04) portals the notice is the Spanish "fuera de servicio" one with a "Reintentar" button; the texts live in `src/app/core/errors/unavailable-copy.ts` and every other portal keeps the original notice.
+
+### How the operations-cost portal reaches production
+
+The manifest entry `operations-cost-portal` is `{ "url": "portals/operations-cost-portal.js", "roles": [...] }` (`TENANT_ADMINISTRATOR`, `OPERATIONAL_COLLABORATOR`, `MANAGER`, the roles its own guard accepts). In the operations-cost portal repository its image serves `portal.js` and `operations-cost-portal.css`; the gateway maps `/portals/operations-cost-portal.js` and `.css` to that container, so the file does not need to be copied into this repository when the portals run as separate containers.
 
 ### Checks
 
