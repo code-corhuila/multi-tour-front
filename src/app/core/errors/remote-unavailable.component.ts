@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { unavailableCopy } from './unavailable-copy';
 
 /** Shown in place of a remote that could not be loaded; the rest of the shell keeps working. */
 @Component({
@@ -6,13 +7,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section role="alert">
-      <h2>{{ portal() }} is not available right now</h2>
-      <p>The rest of the application still works.</p>
-      <button type="button" (click)="retried.emit()">Try again</button>
+      <h2>{{ copy().title }}</h2>
+      <p>{{ copy().body }}</p>
+      <button type="button" (click)="retried.emit()">{{ copy().retry }}</button>
     </section>
   `,
 })
 export class RemoteUnavailableComponent {
   readonly portal = input.required<string>();
   readonly retried = output<void>();
+  protected readonly copy = computed(() => unavailableCopy(this.portal()));
 }
