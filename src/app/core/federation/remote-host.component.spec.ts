@@ -123,3 +123,23 @@ describe('retry of the unavailable area', () => {
     });
   });
 });
+describe('RemoteHostComponent retry of the out of service notice', () => {
+  it('U·Reintentar_mounts_the_remote_again', async () => {
+    TestBed.resetTestingModule();
+    const mount = vi.fn();
+    const importer = vi.fn().mockRejectedValueOnce(new Error('down')).mockResolvedValue({ mount });
+    TestBed.configureTestingModule({ providers: [{ provide: REMOTE_IMPORTER, useValue: importer }] });
+    const fixture = TestBed.createComponent(RemoteHostComponent);
+    fixture.componentRef.setInput('name', 'cash-reporting-portal');
+    fixture.componentRef.setInput('url', '/stubs/x.js');
+    fixture.componentRef.setInput('props', PROPS);
+    fixture.detectChanges();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Caja y reportes: fuera de servicio');
+    });
+    (fixture.nativeElement.querySelector('button') as HTMLButtonElement).click();
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
+    expect(importer).toHaveBeenCalledTimes(2);
+  });
+});

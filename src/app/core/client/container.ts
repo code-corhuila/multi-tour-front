@@ -44,6 +44,9 @@ export function createContainerClient(options: { baseUrl: string; fetch?: typeof
       get roles() {
         return current?.roles ?? [];
       },
+      get permissions() {
+        return current?.permissions ?? [];
+      },
       get access() {
         return current?.access;
       },

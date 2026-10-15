@@ -13,6 +13,8 @@ export interface ApiClient {
 
 export interface Session {
   readonly roles: string[];
+  /** Special permissions of the person (the `permissions` claim, or derived from the roles). Optional in the contract (ADR-007). */
+  readonly permissions?: string[];
   /** Set when the token is a temporary or restricted credential: the portal then routes to the matching screen. */
   readonly access?: 'password-change' | 'restricted';
   /** Name to greet the person with. Absent when the container does not know it; kept in memory only (RN-FRT-17). */

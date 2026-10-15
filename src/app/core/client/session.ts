@@ -1,3 +1,4 @@
+import { permissionsOf } from './permissions';
 import { Session, SessionAnswer } from './types';
 
 export type Refresher = (refreshToken: string) => Promise<SessionAnswer>;
@@ -64,6 +65,7 @@ function asAnswer(value: unknown): SessionAnswer {
 export class TenantSession implements Session {
   token: string | null = null;
   roles: string[] = [];
+  permissions: string[] = [];
   access: Access | undefined;
   displayName: string | undefined;
   private refreshToken: string | undefined;
@@ -80,6 +82,7 @@ export class TenantSession implements Session {
     this.token = accessToken;
     this.refreshToken = refreshToken;
     this.roles = rolesOf(payload);
+    this.permissions = permissionsOf(payload['permissions'], this.roles);
     this.access = accessOf(payload);
     this.displayName = displayNameOf(payload);
     this.timer = refreshToken
@@ -97,6 +100,7 @@ export class TenantSession implements Session {
     this.token = null;
     this.refreshToken = undefined;
     this.roles = [];
+    this.permissions = [];
     this.access = undefined;
     this.displayName = undefined;
   }

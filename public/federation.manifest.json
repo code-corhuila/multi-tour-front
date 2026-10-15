@@ -4,5 +4,9 @@
   "cash-reporting-portal": {
     "url": "portals/cash-reporting-portal.js",
     "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER", "ACCOUNTANT", "ANALYST"]
+  },
+  "operations-cost-portal": {
+    "url": "portals/operations-cost-portal.js",
+    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER"]
   }
 }
