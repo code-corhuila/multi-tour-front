@@ -26,6 +26,7 @@ function setup({ params = {}, remote, scope, returnUrl, profileColors, commercia
   const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
   const route = {
     paramMap: of(convertToParamMap(params)),
+    queryParamMap: of(convertToParamMap(returnUrl ? { returnUrl } : {})),
     snapshot: {
       data: remote
         ? {
