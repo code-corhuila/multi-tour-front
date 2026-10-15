@@ -1,9 +1,16 @@
 {
-  "identity-audit-portal": "portals/identity-audit-portal.js",
-  "commercial-reservation-portal": "portals/commercial-reservation-portal.js",
+  "identity-audit-portal": {
+    "url": "portals/identity-audit-portal.js",
+    "chrome": true
+  },
+  "commercial-reservation-portal": {
+    "url": "portals/commercial-reservation-portal.js",
+    "chrome": true
+  },
   "cash-reporting-portal": {
     "url": "portals/cash-reporting-portal.js",
-    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER", "ACCOUNTANT", "ANALYST"]
+    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER", "ACCOUNTANT", "ANALYST"],
+    "chrome": true
   },
   "operations-cost-portal": {
     "url": "portals/operations-cost-portal.js",

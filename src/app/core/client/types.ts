@@ -53,6 +53,13 @@ export interface MountProps {
    * another portal without the caller knowing any address. Never throws; a target the roles cannot use is ignored.
    */
   navigate?: (target: string | PortalTarget) => void;
+  /**
+   * Who draws the operator sidebar. `'container'`: the portal draws only its content. Absent or `'portal'`: it draws
+   * its own. The container sets it only around a portal that declared `chrome: true` in the manifest (HU-FRT-001).
+   */
+  chrome?: 'container' | 'portal';
+  /** Parameters kept across a mount; the container hands `{ area }` when the address names the area to open. */
+  initialParams?: Readonly<Record<string, string>>;
   /** The commercial name of the company, for screens that show it; tenant mounts only, omitted when blank. */
   commercialName?: string;
   /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
