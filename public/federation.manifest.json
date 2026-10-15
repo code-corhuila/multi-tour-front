@@ -1,5 +1,8 @@
 {
-  "identity-audit-portal": "portals/identity-audit-portal.js",
+  "identity-audit-portal": {
+    "url": "portals/identity-audit-portal.js",
+    "chrome": true
+  },
   "commercial-reservation-portal": {
     "url": "portals/commercial-reservation-portal.js",
     "chrome": true

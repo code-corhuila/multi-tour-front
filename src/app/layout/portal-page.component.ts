@@ -10,6 +10,7 @@ import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/fe
 import { TenantLookup } from '../tenant/tenant.resolver';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
+import { IDENTITY_CHROME_CSS, needsIdentityChromeAdapter } from './identity-chrome-adapter';
 import { chromeFor, NavItem, operatorNav, roleLabel } from './operator-nav';
 import { OperatorSidebarComponent } from './operator-sidebar.component';
 
@@ -37,11 +38,15 @@ interface Sidebar {
   selector: 'app-portal-page',
   imports: [RemoteHostComponent, RemoteUnavailableComponent, NotFoundComponent, OperatorSidebarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
+  // The first style is the TEMPORARY identity adapter, scoped by [data-chrome] (see identity-chrome-adapter.ts).
+  styles: [
+    IDENTITY_CHROME_CSS,
+    `
     .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; }
     .operator-content { min-width: 0; }
     @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
   `,
+  ],
   template: `
     @let v = view();
     @if (v.kind === 'mount') {
@@ -50,7 +55,7 @@ interface Sidebar {
         @if (m.sidebar; as bar) {
           <div class="operator-shell">
             <app-operator-sidebar [items]="bar.items" [identifier]="bar.identifier" [roleLabel]="bar.roleLabel" [active]="bar.active" (closed)="signOut(bar.identifier)" />
-            <div class="operator-content"><app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" /></div>
+            <div class="operator-content" [attr.data-chrome]="adapts(m.remote) ? 'container' : null"><app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" /></div>
           </div>
         } @else {
           <app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" />
@@ -103,6 +108,11 @@ export class PortalPageComponent {
       sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
     };
   });
+
+  /** Temporary: identity still draws its own bar, which the stylesheet hides inside this slot. */
+  protected adapts(remote: string): boolean {
+    return needsIdentityChromeAdapter(remote);
+  }
 
   constructor() {
     this.load();
