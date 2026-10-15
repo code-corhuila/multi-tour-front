@@ -3,6 +3,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { DEV_ROUTES } from './core/auth/dev-routes';
 import { LandingComponent } from './landing/landing.component';
 import { NotFoundComponent } from './layout/not-found.component';
+import { PendingPageComponent } from './layout/pending-page.component';
 import { IDENTITY_PORTAL, PortalPageComponent } from './layout/portal-page.component';
 import { TenantShellComponent } from './tenant/tenant-shell.component';
 import { tenantResolver } from './tenant/tenant.resolver';
@@ -11,6 +12,8 @@ import { tenantResolver } from './tenant/tenant.resolver';
 const portalRoutes: Routes = [
   // The old sign-in path stays as an alias; the query string (returnUrl included) is kept.
   { path: 'sign-in', redirectTo: 'ingresar' },
+  // Blank screen of the entries whose screen is still being built (inside the single sidebar); protected like any area.
+  { path: 'areas/pendiente', component: PendingPageComponent, canActivate: [authGuard] },
   { path: 'areas/:remote', component: PortalPageComponent, canActivate: [authGuard] },
   { path: '**', component: PortalPageComponent, data: { remote: IDENTITY_PORTAL } },
 ];

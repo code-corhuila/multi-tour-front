@@ -16,11 +16,15 @@ export const REMOTE_IMPORTER = new InjectionToken<RemoteImporter>('REMOTE_IMPORT
 /**
  * A manifest entry is the module url, or `{ url, roles }` when only some roles may open the area from another
  * portal (`navigate`). Without `roles` any signed-in person may; the backend still decides every request.
+ * `chrome: true` says the portal leaves the operator sidebar to the container (MountProps.chrome).
  */
-export type ManifestEntry = string | { readonly url: string; readonly roles?: readonly string[] };
+export type ManifestEntry = string | { readonly url: string; readonly roles?: readonly string[]; readonly chrome?: boolean };
 
 export const entryUrl = (entry: ManifestEntry): string => (typeof entry === 'string' ? entry : entry.url);
 export const entryRoles = (entry: ManifestEntry): readonly string[] | undefined => (typeof entry === 'string' ? undefined : entry.roles);
+
+/** True only for a portal that declared it leaves the operator sidebar to the container. */
+export const entryChrome = (entry: ManifestEntry): boolean => typeof entry !== 'string' && entry.chrome === true;
 
 export type ManifestLoader = () => Promise<Record<string, ManifestEntry>>;
 
@@ -42,11 +46,12 @@ function asEntry(value: unknown): ManifestEntry {
     resolveRemoteUrl(value);
     return value as string;
   }
-  const { url, roles } = value as { url?: unknown; roles?: unknown };
+  const { url, roles, chrome } = value as { url?: unknown; roles?: unknown; chrome?: unknown };
   resolveRemoteUrl(url);
-  if (roles === undefined) return { url: url as string };
+  const flag = chrome === true ? { chrome: true } : {};
+  if (roles === undefined) return { url: url as string, ...flag };
   if (!Array.isArray(roles) || roles.some((r) => typeof r !== 'string')) throw new Error('roles must be a list of strings');
-  return { url: url as string, roles: roles as string[] };
+  return { url: url as string, roles: roles as string[], ...flag };
 }
 
 /** Manifest: `{ "<remote name>": <ManifestEntry> }`, the url being a same-origin ES module that exports mount; unsafe or malformed entries are dropped with a warning. */

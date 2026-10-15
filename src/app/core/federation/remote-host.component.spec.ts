@@ -58,6 +58,16 @@ describe('loadManifest', () => {
     expect(await loadManifest('m.json', fetcher)).toEqual({ a: '/a.js', b: entry });
   });
 
+  it('U·manifest_entry_keeps_the_chrome_flag_only_when_it_is_true', async () => {
+    const json = { a: { url: '/a.js', chrome: true }, b: { url: '/b.js', chrome: 'yes' }, c: { url: '/c.js', chrome: true, roles: ['ADMIN'] } };
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => json });
+    expect(await loadManifest('m.json', fetcher)).toEqual({
+      a: { url: '/a.js', chrome: true },
+      b: { url: '/b.js' },
+      c: { url: '/c.js', roles: ['ADMIN'], chrome: true },
+    });
+  });
+
   it('U·manifest_entry_with_bad_roles_or_an_unsafe_url_is_dropped', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const json = { x: { url: '/x.js', roles: 'ADMIN' }, y: { url: '/y.js', roles: [1] }, z: { url: 'https://evil.example/z.js' }, w: { roles: [] } };
