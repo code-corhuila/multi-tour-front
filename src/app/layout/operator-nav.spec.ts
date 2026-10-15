@@ -28,7 +28,7 @@ describe('operator navigation list', () => {
 
   it('U·an_entry_whose_portal_is_not_in_the_manifest_is_not_a_link', () => {
     const items = operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR']);
-    expect(items.find((i) => i.label === 'Salidas')?.link).toBe(false);
+    expect(operatorNav({}, ['TENANT_ADMINISTRATOR']).find((i) => i.label === 'Reservas')?.link).toBe(false);
     expect(items.find((i) => i.label === 'Reservas')).toMatchObject({ link: true, portal: 'commercial-reservation-portal', area: 'reservations' });
   });
 
@@ -38,12 +38,26 @@ describe('operator navigation list', () => {
     expect(items.find((i) => i.label === 'Reservas')?.link).toBe(true);
   });
 
-  // The identity portal does not read initialParams.area yet, so its collaborators list is out of reach of the single sidebar.
-  it('U·colaboradores_is_not_a_link_until_identity_reads_the_area_but_resumen_is', () => {
+  // Entries of screens the portal owners are still building open a blank screen of the container, as links.
+  it('U·pending_entries_are_links_to_the_blank_screen_with_their_own_area', () => {
     const items = operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR']);
-    expect(items.find((i) => i.label === 'Colaboradores')).toMatchObject({ portal: 'identity-audit-portal', link: false });
+    expect(items.find((i) => i.label === 'Salidas')).toMatchObject({ portal: 'pendiente', area: 'salidas', link: true });
+    expect(items.find((i) => i.label === 'Operación')).toMatchObject({ portal: 'pendiente', area: 'operacion', link: true });
+    expect(items.find((i) => i.label === 'Colaboradores')).toMatchObject({ portal: 'pendiente', area: 'colaboradores', link: true });
     expect(items.find((i) => i.label === 'Resumen')).toMatchObject({ portal: 'identity-audit-portal', link: true });
-    expect(items.filter((i) => !i.link).map((i) => i.label)).toEqual(['Salidas', 'Operación', 'Colaboradores']);
+    expect(items.filter((i) => !i.link)).toEqual([]);
+  });
+
+  it('U·salidas_and_operacion_link_to_their_portal_once_it_is_in_the_manifest_with_the_flag', () => {
+    const flagged = { ...MANIFEST, 'operations-cost-portal': { url: 'portals/ops.js', chrome: true } };
+    const items = operatorNav(flagged, ['TENANT_ADMINISTRATOR']);
+    expect(items.find((i) => i.label === 'Salidas')).toMatchObject({ portal: 'operations-cost-portal', link: true });
+    expect(items.find((i) => i.label === 'Operación')).toMatchObject({ portal: 'operations-cost-portal', link: true });
+    expect(items.find((i) => i.label === 'Salidas')?.area).toBeUndefined();
+    // Colaboradores is fixed: it stays blank until the identity portal reads the area.
+    expect(items.find((i) => i.label === 'Colaboradores')).toMatchObject({ portal: 'pendiente', area: 'colaboradores' });
+    const unflagged = { ...MANIFEST, 'operations-cost-portal': 'portals/ops.js' };
+    expect(operatorNav(unflagged, ['TENANT_ADMINISTRATOR']).find((i) => i.label === 'Salidas')?.portal).toBe('pendiente');
   });
 
   it('U·only_operator_roles_are_operators', () => {
