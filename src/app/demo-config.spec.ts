@@ -35,6 +35,13 @@ describe('demo configuration', () => {
     expect([...entry.roles].sort()).toEqual(['ACCOUNTANT', 'ANALYST', 'MANAGER', 'OPERATIONAL_COLLABORATOR', 'TENANT_ADMINISTRATOR']);
   });
 
+  // The operations-cost portal is mounted from the shipped manifest: without this entry the front cannot open it.
+  it('declares the operations-cost portal with the module next to its stylesheet and the three operations roles', () => {
+    const entry = manifest['operations-cost-portal'];
+    expect(urlOf(entry)).toBe('portals/operations-cost-portal.js');
+    expect([...entry.roles].sort()).toEqual(['MANAGER', 'OPERATIONAL_COLLABORATOR', 'TENANT_ADMINISTRATOR']);
+  });
+
   it('keeps the entries it already shipped as they are', () => {
     expect(manifest['identity-audit-portal']).toBe('portals/identity-audit-portal.js');
     expect(manifest['commercial-reservation-portal']).toBe('portals/commercial-reservation-portal.js');
