@@ -12,11 +12,17 @@
 export const IDENTITY_PORTAL_KEY = 'identity-audit-portal';
 
 /** True for the portal that still needs the adapter. */
-export const needsIdentityChromeAdapter = (remote: string): boolean => remote === IDENTITY_PORTAL_KEY;
+export const COMMERCIAL_PORTAL_KEY = 'commercial-reservation-portal';
+
+/** The commercial portal does not read `MountProps.chrome` either: its own `.crp-operator-sidebar` is hidden the same way. */
+export const needsIdentityChromeAdapter = (remote: string): boolean => remote === IDENTITY_PORTAL_KEY || remote === COMMERCIAL_PORTAL_KEY;
 
 /** Component styles (no inline script, CSP safe); `::ng-deep` reaches the remote DOM, which is not the container's. */
 export const IDENTITY_CHROME_CSS = `
   :host ::ng-deep [data-chrome="container"] .staff-sidebar { display: none; }
   :host ::ng-deep [data-chrome="container"] .staff-shell { display: block; min-height: 0; }
   :host ::ng-deep [data-chrome="container"] .staff-content { margin: 0; width: 100%; }
+  :host ::ng-deep [data-chrome="container"] .crp-operator-sidebar { display: none; }
+  :host ::ng-deep [data-chrome="container"] .crp-operator-shell { display: block; min-height: 0; }
+  :host ::ng-deep [data-chrome="container"] .crp-operator-content { margin: 0; width: 100%; }
 `;
