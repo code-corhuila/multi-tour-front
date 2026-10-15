@@ -39,6 +39,9 @@ describe('demo configuration', () => {
   it('declares the operations-cost portal with the module next to its stylesheet and the three operations roles', () => {
     const entry = manifest['operations-cost-portal'];
     expect(urlOf(entry)).toBe('portals/operations-cost-portal.js');
+    // The portal reads its area from the initial params and leaves the sidebar to the container; without the flag
+    // the entries Salidas and Operación open the container's blank screen.
+    expect(entry).toMatchObject({ chrome: true });
     expect([...entry.roles].sort()).toEqual(['MANAGER', 'OPERATIONAL_COLLABORATOR', 'TENANT_ADMINISTRATOR']);
   });
 
