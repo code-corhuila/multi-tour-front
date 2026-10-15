@@ -47,12 +47,16 @@ The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, 
 
 ## The mount contract of a portal
 
-`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal two optional fields:
+`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal these optional fields:
 
 | Field | Meaning |
 |---|---|
 | `scope` | `'general'` at `/ingresar` (the general login, no identifier), `'platform'` under `/platform`, `'tenant'` under `/t/<identifier>` |
 | `navigate(path)` | SPA navigation owned by the container. The portal must use it for every move between screens and areas and never reload the page: the session lives in memory and a full navigation drops it. Only a path of this app is followed (single leading slash, no backslash) |
+| `chrome` | `'container'` when the container draws the single operator sidebar around the portal (the portal then draws only its content); absent or `'portal'` means the portal draws its own. Set only on a tenant area, for an operator session (tenant administrator, operational collaborator, manager, accountant, analyst), around a portal whose manifest entry carries `"chrome": true`; never on the sign-in, under `/platform` or for the final customer |
+| `initialParams` | `{ area }` when the address names the area to open (`?area=`), e.g. the entry the sidebar opened |
+
+The sidebar (`layout/operator-sidebar.component.ts`) lists the entries of one constant, `layout/operator-nav.ts`, with the texts in `layout/operator-nav-copy.ts`; each link opens `{ portal, area }` through the same route as `navigate`. An entry whose portal is not in the manifest, or does not let the role in, shows as "Próximamente". A manifest entry opts in with `{ "url": ..., "chrome": true }`; ship the portal change before turning the flag on. Temporary difference: a portal without the flag (the identity portal today) keeps drawing its own sidebar, and the container draws none around it.
 
 `session.open(answer, identifier?)`: in the `general` scope the portal passes the company identifier typed in the login (kebab-case, 3 to 40; otherwise it throws and nothing opens). The session is kept under that identifier, the portal's `apiClient` carries its token, and `navigate('/t/<identifier>')` or `navigate('/t/<identifier>/areas/<remote>')` lands on the tenant with the session intact. In the other scopes the identifier is ignored.
 
@@ -102,3 +106,7 @@ The manifest entry `operations-cost-portal` is `{ "url": "portals/operations-cos
 
 - `scripts/check-main-build.sh [dir]` (`V·main_build_has_no_dev_sign_in`): the production bundle has no development sign-in and no stub remotes. The CI also proves the check fails on a development build.
 - `scripts/check-image.sh <image>`: runs the image and checks headers, the uncached manifest, the 404 of a missing portal, the router fallback and the non-root user.
+
+Identity portal inside the single sidebar (temporary): the manifest flags `identity-audit-portal` with `"chrome": true`, but the portal does not read `MountProps.chrome` nor `initialParams.area` yet. Until it does, `layout/identity-chrome-adapter.ts` hides the portal's own `.staff-sidebar` with styles scoped by `[data-chrome="container"]` (set only on its slot when the container draws the sidebar; never on the sign-in nor on other portals). "Resumen" opens the portal home; "Mi perfil" and "Identidad visual" stay reachable from the cards of that home. Remove the adapter when identity reads `chrome`.
+
+Pending entries: "Salidas", "Operación" and "Colaboradores" belong to screens their portal owners are still building. They are links (`pending` in `OPERATOR_NAV`) to the container's blank screen, `/t/<id>/areas/pendiente?area=salidas|operacion|colaboradores` (`layout/pending-page.component.ts`, protected by the auth guard, operator sessions only, no request): the sidebar with the entry marked and an empty content with a visually hidden title. "Salidas" and "Operación" link to `operations-cost-portal` as soon as the manifest has it with `"chrome": true`; "Colaboradores" stays blank (`fixed`) until identity reads `initialParams.area`, then remove its `pending`.
