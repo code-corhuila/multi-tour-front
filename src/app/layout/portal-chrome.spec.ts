@@ -9,7 +9,7 @@ import { MANIFEST_LOADER, ManifestEntry, REMOTE_IMPORTER } from '../core/federat
 import { PortalPageComponent } from './portal-page.component';
 
 const MANIFEST: Record<string, ManifestEntry> = {
-  'identity-audit-portal': '/stubs/id.js',
+  'identity-audit-portal': { url: '/stubs/id.js', chrome: true },
   'commercial-reservation-portal': { url: '/stubs/com.js', chrome: true },
   'cash-reporting-portal': { url: '/stubs/cash.js', chrome: true },
   'plain-portal': '/stubs/plain.js',
@@ -79,6 +79,26 @@ describe('the operator sidebar around a mounted portal', () => {
     expect(props.chrome).toBeUndefined();
     expect(el.querySelector('aside')).toBeNull();
     done();
+  });
+
+  // Temporary adapter (identity-chrome-adapter.ts): identity still draws its own aside, so the slot says the container owns the bar.
+  it('U·identity_slot_carries_the_chrome_attribute_only_inside_the_container_bar', async () => {
+    const { el, props, done } = await mounted({ remote: 'identity-audit-portal' });
+    expect(props.chrome).toBe('container');
+    expect(el.querySelector('.operator-content[data-chrome="container"]')).not.toBeNull();
+    done();
+  });
+
+  it('U·other_portals_get_no_chrome_attribute', async () => {
+    const { el, done } = await mounted();
+    expect(el.querySelector('[data-chrome]')).toBeNull();
+    done();
+  });
+
+  it('U·the_sign_in_gets_neither_bar_nor_chrome_attribute', async () => {
+    const { el } = await mounted({ fixed: 'identity-audit-portal', roles: [] });
+    expect(el.querySelector('[data-chrome]')).toBeNull();
+    expect(el.querySelector('aside')).toBeNull();
   });
 
   it('U·container_omits_chrome_on_the_sign_in', async () => {

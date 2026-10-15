@@ -3,10 +3,12 @@ import { ManifestEntry } from '../core/federation/remote-loader';
 import { chromeFor, isOperator, operatorNav, OPERATOR_NAV } from './operator-nav';
 
 const MANIFEST: Record<string, ManifestEntry> = {
-  'identity-audit-portal': 'portals/id.js',
+  'identity-audit-portal': { url: 'portals/id.js', chrome: true },
   'commercial-reservation-portal': { url: 'portals/com.js', chrome: true },
   'cash-reporting-portal': { url: 'portals/cash.js', chrome: true, roles: ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'] },
 };
+
+const PLAIN: ManifestEntry = 'portals/plain.js';
 
 describe('operator navigation list', () => {
   it('U·sidebar_lists_the_eleven_entries_for_the_administrator', () => {
@@ -36,6 +38,14 @@ describe('operator navigation list', () => {
     expect(items.find((i) => i.label === 'Reservas')?.link).toBe(true);
   });
 
+  // The identity portal does not read initialParams.area yet, so its collaborators list is out of reach of the single sidebar.
+  it('U·colaboradores_is_not_a_link_until_identity_reads_the_area_but_resumen_is', () => {
+    const items = operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR']);
+    expect(items.find((i) => i.label === 'Colaboradores')).toMatchObject({ portal: 'identity-audit-portal', link: false });
+    expect(items.find((i) => i.label === 'Resumen')).toMatchObject({ portal: 'identity-audit-portal', link: true });
+    expect(items.filter((i) => !i.link).map((i) => i.label)).toEqual(['Salidas', 'Operación', 'Colaboradores']);
+  });
+
   it('U·only_operator_roles_are_operators', () => {
     expect(isOperator(['TENANT_ADMINISTRATOR'])).toBe(true);
     expect(isOperator(['FINAL_CUSTOMER'])).toBe(false);
@@ -44,7 +54,8 @@ describe('operator navigation list', () => {
 
   it('U·chrome_is_on_only_for_a_flagged_portal_and_an_operator', () => {
     expect(chromeFor(MANIFEST['commercial-reservation-portal'], ['TENANT_ADMINISTRATOR'])).toBe(true);
-    expect(chromeFor(MANIFEST['identity-audit-portal'], ['TENANT_ADMINISTRATOR'])).toBe(false);
+    expect(chromeFor(MANIFEST['identity-audit-portal'], ['TENANT_ADMINISTRATOR'])).toBe(true);
+    expect(chromeFor(PLAIN, ['TENANT_ADMINISTRATOR'])).toBe(false);
     expect(chromeFor(MANIFEST['commercial-reservation-portal'], ['FINAL_CUSTOMER'])).toBe(false);
     expect(chromeFor(undefined, ['TENANT_ADMINISTRATOR'])).toBe(false);
   });

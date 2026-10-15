@@ -36,14 +36,14 @@ describe('demo configuration', () => {
   });
 
   it('keeps the entries it already shipped as they are', () => {
-    expect(manifest['identity-audit-portal']).toBe('portals/identity-audit-portal.js');
+    expect(urlOf(manifest['identity-audit-portal'])).toBe('portals/identity-audit-portal.js');
     expect(urlOf(manifest['commercial-reservation-portal'])).toBe('portals/commercial-reservation-portal.js');
   });
 
   // The container draws the operator sidebar only around the portals that declared they leave it out (RN-FRT-27).
-  it('flags only the commercial and the cash portals to get the container sidebar', () => {
+  it('flags the identity, the commercial and the cash portals to get the container sidebar', () => {
     const flagged = Object.keys(manifest).filter((name) => manifest[name].chrome === true);
-    expect(flagged.sort()).toEqual(['cash-reporting-portal', 'commercial-reservation-portal']);
+    expect(flagged.sort()).toEqual(['cash-reporting-portal', 'commercial-reservation-portal', 'identity-audit-portal']);
   });
 
   it('continues serving the E2E stubs in development', () => {
