@@ -47,12 +47,16 @@ The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, 
 
 ## The mount contract of a portal
 
-`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal two optional fields:
+`mount(element, props)` (ADR-007). Besides `apiClient`, `session` and `identifier?`, the container hands every portal these optional fields:
 
 | Field | Meaning |
 |---|---|
 | `scope` | `'general'` at `/ingresar` (the general login, no identifier), `'platform'` under `/platform`, `'tenant'` under `/t/<identifier>` |
 | `navigate(path)` | SPA navigation owned by the container. The portal must use it for every move between screens and areas and never reload the page: the session lives in memory and a full navigation drops it. Only a path of this app is followed (single leading slash, no backslash) |
+| `chrome` | `'container'` when the container draws the single operator sidebar around the portal (the portal then draws only its content); absent or `'portal'` means the portal draws its own. Set only on a tenant area, for an operator session (tenant administrator, operational collaborator, manager, accountant, analyst), around a portal whose manifest entry carries `"chrome": true`; never on the sign-in, under `/platform` or for the final customer |
+| `initialParams` | `{ area }` when the address names the area to open (`?area=`), e.g. the entry the sidebar opened |
+
+The sidebar (`layout/operator-sidebar.component.ts`) lists the entries of one constant, `layout/operator-nav.ts`, with the texts in `layout/operator-nav-copy.ts`; each link opens `{ portal, area }` through the same route as `navigate`. An entry whose portal is not in the manifest, or does not let the role in, shows as "Próximamente". A manifest entry opts in with `{ "url": ..., "chrome": true }`; ship the portal change before turning the flag on. Temporary difference: a portal without the flag (the identity portal today) keeps drawing its own sidebar, and the container draws none around it.
 
 `session.open(answer, identifier?)`: in the `general` scope the portal passes the company identifier typed in the login (kebab-case, 3 to 40; otherwise it throws and nothing opens). The session is kept under that identifier, the portal's `apiClient` carries its token, and `navigate('/t/<identifier>')` or `navigate('/t/<identifier>/areas/<remote>')` lands on the tenant with the session intact. In the other scopes the identifier is ignored.
 

@@ -10,6 +10,8 @@ import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/fe
 import { TenantLookup } from '../tenant/tenant.resolver';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
+import { chromeFor, NavItem, operatorNav, roleLabel } from './operator-nav';
+import { OperatorSidebarComponent } from './operator-sidebar.component';
 
 export const IDENTITY_PORTAL = 'identity-audit-portal';
 
@@ -17,7 +19,15 @@ type View =
   | { kind: 'loading' }
   | { kind: 'not-found' }
   | { kind: 'unavailable'; remote: string }
-  | { kind: 'mount'; key: string; remote: string; url: string; props: MountProps };
+  | { kind: 'mount'; key: string; remote: string; url: string; props: MountProps; sidebar?: Sidebar };
+
+/** What the operator sidebar needs; present only when the container draws it around this portal. */
+interface Sidebar {
+  identifier: string;
+  items: NavItem[];
+  roleLabel: string;
+  active: { portal: string; area?: string };
+}
 
 /**
  * Mounts one remote of the manifest: the one fixed in the route data (the identity portal) or the one named
@@ -25,14 +35,26 @@ type View =
  */
 @Component({
   selector: 'app-portal-page',
-  imports: [RemoteHostComponent, RemoteUnavailableComponent, NotFoundComponent],
+  imports: [RemoteHostComponent, RemoteUnavailableComponent, NotFoundComponent, OperatorSidebarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; }
+    .operator-content { min-width: 0; }
+    @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
+  `,
   template: `
     @let v = view();
     @if (v.kind === 'mount') {
       <!-- a one-item loop keyed by tenant and remote: a new tenant or area mounts again instead of reusing the old one -->
       @for (m of [v]; track m.key) {
-        <app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" />
+        @if (m.sidebar; as bar) {
+          <div class="operator-shell">
+            <app-operator-sidebar [items]="bar.items" [identifier]="bar.identifier" [roleLabel]="bar.roleLabel" [active]="bar.active" (closed)="signOut(bar.identifier)" />
+            <div class="operator-content"><app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" /></div>
+          </div>
+        } @else {
+          <app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" />
+        }
       }
     } @else if (v.kind === 'unavailable') {
       <app-remote-unavailable [portal]="v.remote" (retried)="load()" />
@@ -51,6 +73,7 @@ export class PortalPageComponent {
   /** Provided by the tenant shell only: the platform and the general login have no tenant colors. */
   private readonly identity = inject(TenantVisualIdentity, { optional: true });
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
+  private readonly query = toSignal(this.route.queryParamMap, { requireSync: true });
   private readonly manifest = signal<Record<string, ManifestEntry> | 'loading' | 'failed'>('loading');
 
   protected readonly view = computed<View>(() => {
@@ -62,14 +85,33 @@ export class PortalPageComponent {
     if (manifest === 'failed') return { kind: 'unavailable', remote };
     const url = Object.hasOwn(manifest, remote) ? entryUrl(manifest[remote]) : undefined;
     // An area asked through `navigate` that the manifest does not list is "not available", not a mistyped address.
-    const asked = this.route.snapshot.queryParamMap.has('area');
+    const area = this.query().get('area') ?? undefined;
+    const asked = area !== undefined;
     if (!url) return fixed || asked ? { kind: 'unavailable', remote } : { kind: 'not-found' };
     const scope = this.route.snapshot.data['scope'] as Scope | undefined;
-    return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: this.propsFor(identifier, scope) };
+    const props = this.propsFor(identifier, scope);
+    const roles = props.session.roles;
+    // Only a tenant mount of a portal that declared the flag, for an operator: never the sign-in, the platform or a customer.
+    const draws = !fixed && scope === undefined && identifier !== undefined && chromeFor(manifest[remote], roles);
+    if (!draws) return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: { ...props, ...(area && { initialParams: { area } }) } };
+    return {
+      kind: 'mount',
+      key: `${identifier}|${remote}|${area ?? ''}`,
+      remote,
+      url,
+      props: { ...props, chrome: 'container', ...(area && { initialParams: { area } }) },
+      sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
+    };
   });
 
   constructor() {
     this.load();
+  }
+
+  /** Closes the tenant session and goes back to its sign-in. */
+  protected signOut(identifier: string): void {
+    this.client.store.of(identifier).close();
+    this.router.navigate(['/t', identifier, 'ingresar']).catch(() => undefined);
   }
 
   protected load(): void {
