@@ -14,6 +14,7 @@
   },
   "operations-cost-portal": {
     "url": "portals/operations-cost-portal.js",
-    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER"]
+    "roles": ["TENANT_ADMINISTRATOR", "OPERATIONAL_COLLABORATOR", "MANAGER"],
+    "chrome": true
   }
 }
