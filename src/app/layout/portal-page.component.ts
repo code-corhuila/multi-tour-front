@@ -10,8 +10,8 @@ import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/fe
 import { TenantLookup } from '../tenant/tenant.resolver';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { NotFoundComponent } from './not-found.component';
-import { IDENTITY_CHROME_CSS, needsIdentityChromeAdapter } from './identity-chrome-adapter';
-import { chromeFor, NavItem, operatorNav, roleLabel } from './operator-nav';
+import { IDENTITY_CHROME_CSS, IDENTITY_PORTAL_KEY, needsIdentityChromeAdapter } from './identity-chrome-adapter';
+import { chromeFor, isOperator, NavItem, operatorNav, roleLabel } from './operator-nav';
 import { OperatorSidebarComponent } from './operator-sidebar.component';
 
 export const IDENTITY_PORTAL = 'identity-audit-portal';
@@ -155,7 +155,10 @@ export class PortalPageComponent {
     this.router.navigate(commands, { queryParams: { area } }).catch(() => undefined);
   }
 
-  /** After the portal opens a full session, the person goes back to the url the guard kept. */
+  /**
+   * After the portal opens a full session, the person goes back to the url the guard kept; without one, an operator of a tenant
+   * goes to the identity area, because the sign-in route draws no sidebar and that area gets the container's one.
+   */
   private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
     const props = this.client.propsFor(identifier, scope);
     const real = props.session;
@@ -172,7 +175,9 @@ export class PortalPageComponent {
       open: (answer, id) => {
         real.open(answer, id);
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
-        if (back && !real.access) void this.router.navigateByUrl(back);
+        if (real.access) return;
+        if (back) void this.router.navigateByUrl(back);
+        else if (identifier !== undefined && scope === undefined && isOperator(real.roles)) void this.router.navigateByUrl(`/t/${identifier}/areas/${IDENTITY_PORTAL_KEY}`);
       },
       close: () => real.close(),
     };
