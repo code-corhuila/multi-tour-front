@@ -42,7 +42,7 @@ interface Sidebar {
   styles: [
     IDENTITY_CHROME_CSS,
     `
-    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; }
+    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
     .operator-content { min-width: 0; }
     @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
   `,

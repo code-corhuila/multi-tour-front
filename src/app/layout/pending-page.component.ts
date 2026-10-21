@@ -16,7 +16,7 @@ import { OperatorSidebarComponent } from './operator-sidebar.component';
   imports: [OperatorSidebarComponent, NotFoundComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; }
+    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
     .operator-content { min-width: 0; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
