@@ -66,6 +66,12 @@ describe('blank screen of the pending entries', () => {
     expect(el.querySelector('aside')).toBeNull();
   });
 
+  // The mockup shell is as tall as the window (min-height 100vh): with an empty content the sidebar must not shrink to its list.
+  it('U·the_sidebar_shell_fills_the_viewport_like_the_mockup', async () => {
+    const { el } = await render('salidas');
+    expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).minHeight).toBe('100vh');
+  });
+
   it('U·cerrar_sesion_closes_the_session', async () => {
     const { el, client } = await render('salidas');
     (Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Cerrar sesión')) as HTMLButtonElement).click();
