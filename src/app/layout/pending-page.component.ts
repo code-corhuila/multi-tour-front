@@ -16,8 +16,9 @@ import { OperatorSidebarComponent } from './operator-sidebar.component';
   imports: [OperatorSidebarComponent, NotFoundComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
-    .operator-content { min-width: 0; }
+    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; background: var(--page-bg, #f5f7f7); }
+    /* Own width: a portal stylesheet is global and may define .operator-content too (operations-cost sets 1240px). */
+    .operator-content { min-width: 0; width: 100%; max-width: 1420px; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
   `,
