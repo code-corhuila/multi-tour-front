@@ -77,11 +77,15 @@ describe('blank screen of the pending entries', () => {
     const style = document.createElement('style');
     style.textContent = '.operator-content{width:min(100%,1240px)}';
     document.head.appendChild(style);
-    const { el } = await render('salidas');
-    const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
-    expect(content.width).toBe('100%');
-    expect(content.maxWidth).toBe('1420px');
-    style.remove();
+    try {
+      const { el } = await render('salidas');
+      const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
+      expect(content.width).toBe('100%');
+      expect(content.maxWidth).toBe('1420px');
+      expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).background).toContain('#f5f7f7');
+    } finally {
+      style.remove();
+    }
   });
 
   it('U·cerrar_sesion_closes_the_session', async () => {

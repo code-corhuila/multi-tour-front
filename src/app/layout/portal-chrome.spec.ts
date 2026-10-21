@@ -76,12 +76,16 @@ describe('the operator sidebar around a mounted portal', () => {
     const style = document.createElement('style');
     style.textContent = '.operator-content{width:min(100%,1240px)}';
     document.head.appendChild(style);
-    const { el, done } = await mounted();
-    const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
-    expect(content.width).toBe('100%');
-    expect(content.maxWidth).toBe('1420px');
-    style.remove();
-    done();
+    try {
+      const { el, done } = await mounted();
+      const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
+      expect(content.width).toBe('100%');
+      expect(content.maxWidth).toBe('1420px');
+      expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).background).toContain('#f5f7f7');
+      done();
+    } finally {
+      style.remove();
+    }
   });
 
   it('U·the_collaborator_sees_no_descuentos_nor_colaboradores', async () => {
