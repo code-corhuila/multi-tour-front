@@ -72,6 +72,18 @@ describe('the operator sidebar around a mounted portal', () => {
     done();
   });
 
+  it('U·the_content_area_fills_its_column_up_to_1420px_like_the_mockup_whatever_a_portal_styles', async () => {
+    const style = document.createElement('style');
+    style.textContent = '.operator-content{width:min(100%,1240px)}';
+    document.head.appendChild(style);
+    const { el, done } = await mounted();
+    const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
+    expect(content.width).toBe('100%');
+    expect(content.maxWidth).toBe('1420px');
+    style.remove();
+    done();
+  });
+
   it('U·the_collaborator_sees_no_descuentos_nor_colaboradores', async () => {
     const { el, done } = await mounted({ roles: ['OPERATIONAL_COLLABORATOR'] });
     expect(el.textContent).not.toContain('Descuentos');
