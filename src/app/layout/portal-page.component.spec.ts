@@ -105,6 +105,40 @@ describe('PortalPageComponent', () => {
     client.store.of('acme').close();
   });
 
+  // The sign-in route draws no sidebar: an operator who just signed in goes to the identity area, where the container draws the one sidebar.
+  it.each(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST'])('takes the %s who just signed in to the identity area', async (role) => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt([role])));
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/identity-audit-portal');
+    client.store.of('acme').close();
+  });
+
+  it('keeps the requested url over the identity area after the operator signs in', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalled());
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/x');
+    client.store.of('acme').close();
+  });
+
+  it.each([['FINAL_CUSTOMER'], ['PLATFORM_ADMINISTRATOR']])('does not move the %s after the sign-in', async (role) => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt([role])));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  it('does not move the platform sign-in either', async () => {
+    const { fixture, mount, navigate, client } = setup({ remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of().close();
+  });
+
   it('never goes back to another site', async () => {
     const { fixture, mount, navigate, client } = setup({ remote: 'identity-audit-portal', returnUrl: '//evil.example/x' });
     await until(fixture, () => expect(mount).toHaveBeenCalled());
