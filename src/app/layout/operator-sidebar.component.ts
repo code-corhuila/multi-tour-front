@@ -9,8 +9,9 @@ import { OPERATOR_NAV_COPY } from './operator-nav-copy';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    :host { display: block; }
-    aside { display: flex; flex-direction: column; box-sizing: border-box; height: 100%; padding: 22px 14px 18px; background: var(--surface, #fff); border-right: 1px solid var(--line, #d7e0de); color: var(--text, #1c292b); font-family: 'Manrope', sans-serif; }
+    /* Fixed to the window: the sign-out stays at the bottom of the window, not at the bottom of a page that grows while its content loads. */
+    :host { display: block; position: sticky; top: 0; align-self: start; height: 100vh; }
+    aside { display: flex; flex-direction: column; box-sizing: border-box; height: 100%; overflow-y: auto; padding: 22px 14px 18px; background: var(--surface, #fff); border-right: 1px solid var(--line, #d7e0de); color: var(--text, #1c292b); font-family: 'Manrope', sans-serif; }
     .brand { font-size: 0.9rem; font-weight: 800; letter-spacing: 0.12em; }
     .brand span { color: var(--cta, #2f6b57); }
     .role { margin: 10px 0 26px; color: var(--text-soft, #5d6d6a); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -23,7 +24,8 @@ import { OPERATOR_NAV_COPY } from './operator-nav-copy';
     small { margin-left: 6px; font-size: 0.7rem; font-weight: 600; }
     button { margin-top: auto; cursor: pointer; }
     @media (max-width: 860px) {
-      aside { height: auto; padding: 16px; border-right: 0; border-bottom: 1px solid var(--line, #d7e0de); }
+      :host { position: static; height: auto; }
+      aside { height: auto; overflow-y: visible; padding: 16px; border-right: 0; border-bottom: 1px solid var(--line, #d7e0de); }
       .role { margin: 6px 0 12px; }
       ul { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       a, .soon { padding: 8px 6px; text-align: center; font-size: 0.74rem; border-left: 0; border-top: 3px solid transparent; }
