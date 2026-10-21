@@ -162,6 +162,8 @@ export class PortalPageComponent {
   private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
     const props = this.client.propsFor(identifier, scope);
     const real = props.session;
+    // Only the sign-in route carries a fixed remote (route data); a portal mounted in an area is never sent to another one.
+    const onSignIn = this.route.snapshot.data['remote'] !== undefined;
     const session: Session = {
       get roles() {
         return real.roles;
@@ -177,7 +179,7 @@ export class PortalPageComponent {
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
         if (real.access) return;
         if (back) void this.router.navigateByUrl(back);
-        else if (identifier !== undefined && scope === undefined && isOperator(real.roles)) void this.router.navigateByUrl(`/t/${identifier}/areas/${IDENTITY_PORTAL_KEY}`);
+        else if (onSignIn && identifier !== undefined && scope === undefined && isOperator(real.roles)) void this.router.navigateByUrl(`/t/${identifier}/areas/${IDENTITY_PORTAL_KEY}`);
       },
       close: () => real.close(),
     };
