@@ -66,6 +66,12 @@ describe('the operator sidebar around a mounted portal', () => {
     done();
   });
 
+  it('U·the_sidebar_shell_fills_the_viewport_like_the_mockup', async () => {
+    const { el, done } = await mounted();
+    expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).minHeight).toBe('100vh');
+    done();
+  });
+
   it('U·the_collaborator_sees_no_descuentos_nor_colaboradores', async () => {
     const { el, done } = await mounted({ roles: ['OPERATIONAL_COLLABORATOR'] });
     expect(el.textContent).not.toContain('Descuentos');
