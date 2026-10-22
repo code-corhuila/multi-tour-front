@@ -166,6 +166,21 @@ describe('the operator sidebar around a mounted portal', () => {
     done();
   });
 
+  it('U·the_entry_of_the_open_area_mounts_the_portal_again_so_a_sub_screen_goes_back_to_the_area', async () => {
+    const { props, el, fixture, mount, done } = await mounted({ area: 'reservations' });
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    // A sub-screen (reservation detail) reports its parent area, which is the one the address names: the router ignores the link.
+    props.onAreaChange('reservations');
+    fixture.detectChanges();
+    (Array.from(el.querySelectorAll('aside a')).find((a) => a.textContent?.trim() === 'Reservas') as HTMLAnchorElement).click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(mount).toHaveBeenCalledTimes(2);
+    });
+    expect(mount.mock.calls[1][1].initialParams).toEqual({ area: 'reservations' });
+    done();
+  });
+
   it('U·an_area_the_menu_does_not_list_leaves_the_marked_entry_as_it_was_but_never_fails', async () => {
     const { props, el, fixture, done } = await mounted({ area: 'payments' });
     expect(() => props.onAreaChange('area-without-entry')).not.toThrow();
