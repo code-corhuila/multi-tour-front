@@ -117,12 +117,12 @@ export class PortalPageComponent {
   private readonly reloads = signal(0);
 
   /**
-   * An entry of the sidebar was clicked. When the address already names that entry but the portal moved to another area on its own
-   * (`onAreaChange`), the router would ignore the link (same address) and the person could not come back: mount the portal again.
+   * An entry of the sidebar was clicked. When the address already names that entry but the portal is no longer at its root (another area
+   * or a sub-screen, `onAreaChange`), the router would ignore the link (same address) and the person could not come back: mount the portal again.
    */
   protected reopen(mountKey: string, item: { area?: string }): void {
-    const reported = this.reported();
-    if (reported?.key === mountKey && item.area !== undefined && item.area === this.query().get('area') && reported.area !== item.area) {
+    // A sub-screen reports its parent area, so "the portal moved elsewhere" cannot be told from "it sits on a sub-screen of this area": both mount again.
+    if (this.reported()?.key === mountKey && item.area !== undefined && item.area === this.query().get('area')) {
       this.reloads.update((n) => n + 1);
     }
   }
