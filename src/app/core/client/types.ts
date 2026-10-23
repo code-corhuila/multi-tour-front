@@ -64,6 +64,12 @@ export interface MountProps {
   commercialName?: string;
   /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
   visualIdentity?: { primaryColor: string; secondaryColor: string } | null;
+  /**
+   * Set only around a portal that draws no sidebar of its own (`chrome: 'container'`). The portal calls it with the area key of the
+   * entry it shows as current whenever that changes inside the portal (e.g. a button of one area that opens another), so the
+   * container marks that entry in its sidebar without mounting the portal again. A key the menu does not list marks no entry.
+   */
+  onAreaChange?: (area: string) => void;
   /** The portal calls it with the colors the service returned after a save; the container applies them live. */
   onVisualIdentityChange?: (colors: { primaryColor: string; secondaryColor: string }) => void;
 }

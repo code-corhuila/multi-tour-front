@@ -55,7 +55,7 @@ interface Sidebar {
       @for (m of [v]; track m.key) {
         @if (m.sidebar; as bar) {
           <div class="operator-shell">
-            <app-operator-sidebar [items]="bar.items" [identifier]="bar.identifier" [roleLabel]="bar.roleLabel" [active]="bar.active" (closed)="signOut(bar.identifier)" />
+            <app-operator-sidebar [items]="bar.items" [identifier]="bar.identifier" [roleLabel]="bar.roleLabel" [active]="activeOf(m.key, bar.active)" (opened)="reopen(m.key, $event)" (closed)="signOut(bar.identifier)" />
             <div class="operator-content" [attr.data-chrome]="adapts(m.remote) ? 'container' : null"><app-remote-host [name]="m.remote" [url]="m.url" [props]="m.props" /></div>
           </div>
         } @else {
@@ -100,15 +100,39 @@ export class PortalPageComponent {
     // Only a tenant mount of a portal that declared the flag, for an operator: never the sign-in, the platform or a customer.
     const draws = !fixed && scope === undefined && identifier !== undefined && chromeFor(manifest[remote], roles);
     if (!draws) return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: { ...props, ...(area && { initialParams: { area } }) } };
+    const key = `${identifier}|${remote}|${area ?? ''}|${this.reloads()}`;
     return {
       kind: 'mount',
-      key: `${identifier}|${remote}|${area ?? ''}`,
+      key,
       remote,
       url,
-      props: { ...props, chrome: 'container', ...(area && { initialParams: { area } }) },
+      props: { ...props, chrome: 'container', onAreaChange: (reported: string) => this.reported.set({ key, area: reported }), ...(area && { initialParams: { area } }) },
       sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
     };
   });
+
+  /** The entry the mounted portal says it shows (MountProps.onAreaChange); it belongs to one mount, so a new mount forgets it. */
+  private readonly reported = signal<{ key: string; area: string } | null>(null);
+
+  /** Bumped to mount the portal again at the area the address names (see `reopen`). */
+  private readonly reloads = signal(0);
+
+  /**
+   * An entry of the sidebar was clicked. When the address already names that entry but the portal is no longer at its root (another area
+   * or a sub-screen, `onAreaChange`), the router would ignore the link (same address) and the person could not come back: mount the portal again.
+   */
+  protected reopen(mountKey: string, item: { area?: string }): void {
+    // A sub-screen reports its parent area, so "the portal moved elsewhere" cannot be told from "it sits on a sub-screen of this area": both mount again.
+    if (this.reported()?.key === mountKey && item.area !== undefined && item.area === this.query().get('area')) {
+      this.reloads.update((n) => n + 1);
+    }
+  }
+
+  /** The entry the sidebar marks: what the mounted portal reported, otherwise what the address names. */
+  protected activeOf(key: string, named: { portal: string; area?: string }): { portal: string; area?: string } {
+    const reported = this.reported();
+    return reported?.key === key ? { portal: named.portal, area: reported.area } : named;
+  }
 
   /** Temporary: identity still draws its own bar, which the stylesheet hides inside this slot. */
   protected adapts(remote: string): boolean {

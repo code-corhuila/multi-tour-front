@@ -46,6 +46,7 @@ import { OPERATOR_NAV_COPY } from './operator-nav-copy';
                   [routerLink]="['/t', identifier(), 'areas', item.portal]"
                   [queryParams]="item.area ? { area: item.area } : null"
                   [attr.aria-current]="$index === activeIndex() ? 'page' : null"
+                  (click)="opened.emit(item)"
                   >{{ item.label }}</a
                 >
               } @else {
@@ -67,6 +68,8 @@ export class OperatorSidebarComponent {
   /** The portal and area open now; the first entry that matches is the current one. */
   readonly active = input.required<{ portal: string; area?: string }>();
   readonly closed = output<void>();
+  /** An entry was clicked: the page may need to mount its portal again when the address already names that entry. */
+  readonly opened = output<NavItem>();
 
   protected readonly activeIndex = computed(() => {
     const { portal, area } = this.active();
