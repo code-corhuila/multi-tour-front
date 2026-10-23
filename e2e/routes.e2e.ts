@@ -29,9 +29,13 @@ test('E2E· unknown_identifier_and_unknown_route_show_404', async ({ page }) => 
 });
 
 test('E2E·inactive_tenant_shows_the_notice_and_mounts_no_area', async ({ page }) => {
+  // The area is protected, so it ends at the sign-in (allowed, RN-FRT-24); the area itself must never mount.
   await page.goto('/t/dormant/areas/stub-react');
   await expect(page.getByText('Dormant Tours is not active')).toBeVisible();
   await expect(page.getByText('Stub React remote')).toHaveCount(0);
+  await expect(page.getByText('Stub sign-in')).toBeVisible();
+  await page.goto('/t/dormant');
+  await expect(page.getByText('Dormant Tours is not active')).toBeVisible();
   await expect(page.getByText('Stub sign-in')).toHaveCount(0);
 });
 
