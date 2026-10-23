@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { ActivatedRoute, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { NotFoundComponent } from '../layout/not-found.component';
 import { TenantLookup } from './tenant.resolver';
 import { TenantVisualIdentity } from './tenant-visual-identity';
@@ -28,6 +30,9 @@ import { TenantVisualIdentity } from './tenant-visual-identity';
           <h2>{{ name }} is not active</h2>
           <p>This company is not taking part in Multitour right now.</p>
         </section>
+        @if (signInOnly()) {
+          <router-outlet />
+        }
       }
       @case ('error') {
         <section role="alert">
@@ -48,7 +53,16 @@ export class TenantShellComponent {
   protected readonly identity = inject(TenantVisualIdentity);
   protected readonly theme = this.tenant.state === 'active' ? this.tenant.profile.identifier : null;
 
+  private readonly router = inject(Router);
+  private readonly url = signal(this.router.url);
+  /** Follows the address the router is going to (start, not end), so the outlet is gone before a target area is activated.
+   *  An inactive tenant opens no area, but its sign-in stays reachable for the Administrator's restricted access. */
+  protected readonly signInOnly = computed(() => /^\/t\/[^/?#]+\/ingresar(?:[/?#]|$)/.test(this.url()));
+
   constructor() {
+    this.router.events
+      .pipe(filter((event): event is NavigationStart => event instanceof NavigationStart), takeUntilDestroyed())
+      .subscribe((event) => this.url.set(event.url));
     if (this.tenant.state === 'active') this.identity.start(this.tenant.profile.visualIdentity);
   }
 
