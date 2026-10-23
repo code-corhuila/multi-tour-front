@@ -42,8 +42,9 @@ interface Sidebar {
   styles: [
     IDENTITY_CHROME_CSS,
     `
-    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100%; }
-    .operator-content { min-width: 0; }
+    .operator-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; background: var(--page-bg, #f5f7f7); }
+    /* Own width: a portal stylesheet is global and may define .operator-content too (operations-cost sets 1240px). */
+    .operator-content { min-width: 0; width: 100%; max-width: 1420px; }
     @media (max-width: 860px) { .operator-shell { grid-template-columns: minmax(0, 1fr); } }
   `,
   ],
