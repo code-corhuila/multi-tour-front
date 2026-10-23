@@ -1,12 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter, Router } from '@angular/router';
+import { Subject } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { TenantShellComponent } from './tenant-shell.component';
 import { TenantLookup } from './tenant.resolver';
 
-function render(tenant: TenantLookup) {
+function render(tenant: TenantLookup, url = '/t/acme') {
   TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { data: { tenant } } } }],
+    providers: [
+      provideRouter([]),
+      { provide: Router, useValue: { url, events: new Subject() } },
+      { provide: ActivatedRoute, useValue: { snapshot: { data: { tenant } } } },
+    ],
   });
   const fixture = TestBed.createComponent(TenantShellComponent);
   fixture.detectChanges();
@@ -33,6 +38,14 @@ describe('TenantShellComponent', () => {
     const el = render({ state: 'inactive', profile: profile('INACTIVE') });
     expect(el.textContent).toContain('Acme Tours is not active');
     expect(el.querySelector('router-outlet')).toBeNull();
+  });
+
+  it('U·inactive_tenant_renders_the_outlet_only_for_the_sign_in', () => {
+    const inactive = render({ state: 'inactive', profile: profile('INACTIVE') }, '/t/acme/ingresar?returnUrl=%2F');
+    expect(inactive.textContent).toContain('Acme Tours is not active');
+    expect(inactive.querySelector('router-outlet')).not.toBeNull();
+    TestBed.resetTestingModule();
+    expect(render({ state: 'inactive', profile: profile('INACTIVE') }, '/t/acme/areas/x').querySelector('router-outlet')).toBeNull();
   });
 
   it('offers a retry when the lookup failed', () => {
