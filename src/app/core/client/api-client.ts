@@ -1,6 +1,8 @@
 import { ApiClient, ApiError, ErrorDetail, RequestOptions } from './types';
 
 export const REQUEST_TIMEOUT_MS = 10_000;
+/** Longer window for uploads (FormData bodies carry a file). */
+export const FORM_DATA_TIMEOUT_MS = 30_000;
 
 export interface ClientOptions {
   baseUrl: string;
@@ -25,6 +27,8 @@ const BY_STATUS: Record<number, string> = {
   401: 'Your session ended. Sign in again.',
   403: 'You do not have permission to do this.',
   404: 'What you asked for was not found.',
+  413: 'The file is too large.',
+  415: 'This file type is not allowed.',
   422: 'This action is not allowed in the current state.',
   429: 'Too many requests. Wait a moment and try again.',
   503: 'This service is not available right now. Try again later.',
@@ -107,14 +111,19 @@ export function createApiClient(options: ClientOptions): ApiClient {
       const token = options.token();
       if (token) headers['Authorization'] = `Bearer ${token}`;
       headers['X-Correlation-Id'] = correlationId;
-      if (init.body !== undefined) headers['Content-Type'] = 'application/json';
+      // A FormData goes as is: the browser sets multipart/form-data with its boundary, so no Content-Type here.
+      const isForm = typeof FormData !== 'undefined' && init.body instanceof FormData;
+      if (init.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
       const controller = new AbortController();
       let timedOut = false;
-      const timer = setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, timeoutMs);
+      const timer = setTimeout(
+        () => {
+          timedOut = true;
+          controller.abort();
+        },
+        isForm ? Math.max(timeoutMs, FORM_DATA_TIMEOUT_MS) : timeoutMs,
+      );
       const onCallerAbort = () => controller.abort();
       callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
 
@@ -122,7 +131,7 @@ export function createApiClient(options: ClientOptions): ApiClient {
         const response = await send(options.baseUrl + path, {
           method,
           headers,
-          body: init.body === undefined ? undefined : JSON.stringify(init.body),
+          body: init.body === undefined ? undefined : isForm ? (init.body as FormData) : JSON.stringify(init.body),
           signal: controller.signal,
         });
         if (response.ok) {
