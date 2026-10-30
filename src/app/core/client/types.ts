@@ -6,6 +6,12 @@ export interface RequestOptions {
   /** Extra headers, e.g. `Idempotency-Key`; the client still owns `Authorization` and `X-Correlation-Id`. */
   headers?: Record<string, string>;
   /**
+   * `'blob'`: an answer that is a file (e.g. a stored payment proof) is returned as a `Blob`, fetched with the session's
+   * `Authorization`; the portal opens it with an object URL (the CSP allows `blob:` in `img-src` and `frame-src`).
+   * Omitted or `'json'`: the answer is parsed as JSON. Errors keep the common envelope in both cases.
+   */
+  responseType?: 'json' | 'blob';
+  /**
    * Milliseconds to wait for this request. Omitted: 10 s (30 s for a FormData). A longer window is for a call that runs a saga
    * (e.g. 80000); a value that is not positive and finite is ignored, and the client caps it at 120 s.
    */
