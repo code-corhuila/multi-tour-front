@@ -3,6 +3,8 @@ import { ApiClient, ApiError, ErrorDetail, RequestOptions } from './types';
 export const REQUEST_TIMEOUT_MS = 10_000;
 /** Longer window for uploads (FormData bodies carry a file). */
 export const FORM_DATA_TIMEOUT_MS = 30_000;
+/** The longest window a caller may ask for with `timeoutMs`: a portal cannot hold a request open forever. */
+export const MAX_REQUEST_TIMEOUT_MS = 120_000;
 
 export interface ClientOptions {
   baseUrl: string;
@@ -118,13 +120,18 @@ export function createApiClient(options: ClientOptions): ApiClient {
 
       const controller = new AbortController();
       let timedOut = false;
-      const timer = setTimeout(
-        () => {
-          timedOut = true;
-          controller.abort();
-        },
-        isForm ? Math.max(timeoutMs, FORM_DATA_TIMEOUT_MS) : timeoutMs,
-      );
+      // A valid `timeoutMs` of the caller wins (a saga may take 70 s); otherwise the client default, longer for a file.
+      const asked = init.timeoutMs;
+      const waitMs =
+        typeof asked === 'number' && Number.isFinite(asked) && asked > 0
+          ? Math.min(asked, MAX_REQUEST_TIMEOUT_MS)
+          : isForm
+            ? Math.max(timeoutMs, FORM_DATA_TIMEOUT_MS)
+            : timeoutMs;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, waitMs);
       const onCallerAbort = () => controller.abort();
       callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
 

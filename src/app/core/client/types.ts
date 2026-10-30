@@ -11,6 +11,11 @@ export interface RequestOptions {
    * Omitted or `'json'`: the answer is parsed as JSON. Errors keep the common envelope in both cases.
    */
   responseType?: 'json' | 'blob';
+  /**
+   * Milliseconds to wait for this request. Omitted: 10 s (30 s for a FormData). A longer window is for a call that runs a saga
+   * (e.g. 80000); a value that is not positive and finite is ignored, and the client caps it at 120 s.
+   */
+  timeoutMs?: number;
 }
 
 export interface ApiClient {
@@ -44,6 +49,11 @@ export interface PortalTarget {
   portal: string;
   /** Area key declared by that portal. */
   area: string;
+  /**
+   * Plain text values the area needs on arrival (e.g. the tour to reserve). They travel in the address and come back as
+   * `initialParams`; the container keeps only short strings under plain names and drops the rest.
+   */
+  params?: Readonly<Record<string, string>>;
 }
 
 export interface MountProps {
@@ -64,7 +74,7 @@ export interface MountProps {
    * its own. The container sets it only around a portal that declared `chrome: true` in the manifest (HU-FRT-001).
    */
   chrome?: 'container' | 'portal';
-  /** Parameters kept across a mount; the container hands `{ area }` when the address names the area to open. */
+  /** Parameters kept across a mount; the container hands `{ area }` when the address names the area to open, plus the plain-string values of `navigate({ portal, area, params })` or of the query. */
   initialParams?: Readonly<Record<string, string>>;
   /** The commercial name of the company, for screens that show it; tenant mounts only, omitted when blank. */
   commercialName?: string;
