@@ -5,6 +5,12 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Extra headers, e.g. `Idempotency-Key`; the client still owns `Authorization` and `X-Correlation-Id`. */
   headers?: Record<string, string>;
+  /**
+   * `'blob'`: an answer that is a file (e.g. a stored payment proof) is returned as a `Blob`, fetched with the session's
+   * `Authorization`; the portal opens it with an object URL (the CSP allows `blob:` in `img-src` and `frame-src`).
+   * Omitted or `'json'`: the answer is parsed as JSON. Errors keep the common envelope in both cases.
+   */
+  responseType?: 'json' | 'blob';
 }
 
 export interface ApiClient {

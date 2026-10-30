@@ -104,7 +104,8 @@ export function createApiClient(options: ClientOptions): ApiClient {
       if (callerSignal?.aborted) throw failure(undefined, 'ABORTED', correlationId);
 
       const method = (init.method ?? 'GET').toUpperCase();
-      const headers: Record<string, string> = { Accept: 'application/json' };
+      const asBlob = init.responseType === 'blob';
+      const headers: Record<string, string> = { Accept: asBlob ? '*/*' : 'application/json' };
       for (const [name, value] of Object.entries(init.headers ?? {})) {
         if (!RESERVED_HEADERS.has(name.toLowerCase())) headers[name] = value;
       }
@@ -135,6 +136,7 @@ export function createApiClient(options: ClientOptions): ApiClient {
           signal: controller.signal,
         });
         if (response.ok) {
+          if (asBlob) return (await response.blob()) as T;
           const text = await response.text();
           try {
             return (text ? JSON.parse(text) : undefined) as T;
