@@ -5,6 +5,11 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Extra headers, e.g. `Idempotency-Key`; the client still owns `Authorization` and `X-Correlation-Id`. */
   headers?: Record<string, string>;
+  /**
+   * Milliseconds to wait for this request. Omitted: 10 s (30 s for a FormData). A longer window is for a call that runs a saga
+   * (e.g. 80000); a value that is not positive and finite is ignored, and the client caps it at 120 s.
+   */
+  timeoutMs?: number;
 }
 
 export interface ApiClient {
