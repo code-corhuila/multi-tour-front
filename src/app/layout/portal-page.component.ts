@@ -9,6 +9,7 @@ import { RemoteHostComponent } from '../core/federation/remote-host.component';
 import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/federation/remote-loader';
 import { TenantLookup } from '../tenant/tenant.resolver';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
+import { initialParamsOf, navigationParams } from './initial-params';
 import { NotFoundComponent } from './not-found.component';
 import { IDENTITY_CHROME_CSS, IDENTITY_PORTAL_KEY, needsIdentityChromeAdapter } from './identity-chrome-adapter';
 import { chromeFor, isOperator, NavItem, operatorNav, roleLabel } from './operator-nav';
@@ -96,17 +97,18 @@ export class PortalPageComponent {
     if (!url) return fixed || asked ? { kind: 'unavailable', remote } : { kind: 'not-found' };
     const scope = this.route.snapshot.data['scope'] as Scope | undefined;
     const props = this.propsFor(identifier, scope);
+    const initialParams = initialParamsOf(this.query());
     const roles = props.session.roles;
     // Only a tenant mount of a portal that declared the flag, for an operator: never the sign-in, the platform or a customer.
     const draws = !fixed && scope === undefined && identifier !== undefined && chromeFor(manifest[remote], roles);
-    if (!draws) return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: { ...props, ...(area && { initialParams: { area } }) } };
-    const key = `${identifier}|${remote}|${area ?? ''}|${this.reloads()}`;
+    if (!draws) return { kind: 'mount', key: `${scope ?? ''}|${identifier ?? ''}|${remote}`, remote, url, props: { ...props, ...(initialParams && { initialParams }) } };
+    const key = `${identifier}|${remote}|${area ?? ''}|${JSON.stringify(initialParams ?? {})}|${this.reloads()}`;
     return {
       kind: 'mount',
       key,
       remote,
       url,
-      props: { ...props, chrome: 'container', onAreaChange: (reported: string) => this.reported.set({ key, area: reported }), ...(area && { initialParams: { area } }) },
+      props: { ...props, chrome: 'container', onAreaChange: (reported: string) => this.reported.set({ key, area: reported }), ...(initialParams && { initialParams }) },
       sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
     };
   });
@@ -169,7 +171,7 @@ export class PortalPageComponent {
    * session's roles cannot use is not opened; an unknown one goes to the unavailable notice of that area.
    */
   private openTarget(target: unknown, identifier: string | undefined, scope: Scope | undefined, session: Session): void {
-    const { portal, area } = (typeof target === 'object' && target !== null ? target : {}) as Partial<PortalTarget>;
+    const { portal, area, params } = (typeof target === 'object' && target !== null ? target : {}) as Partial<PortalTarget>;
     if (typeof portal !== 'string' || portal === '' || typeof area !== 'string' || area === '' || scope === 'general') return;
     const manifest = this.manifest();
     if (typeof manifest !== 'string' && Object.hasOwn(manifest, portal)) {
@@ -177,7 +179,7 @@ export class PortalPageComponent {
       if (roles && !roles.some((role) => session.roles.includes(role))) return;
     }
     const commands = identifier === undefined ? ['/platform', 'areas', portal] : ['/t', identifier, 'areas', portal];
-    this.router.navigate(commands, { queryParams: { area } }).catch(() => undefined);
+    this.router.navigate(commands, { queryParams: { ...navigationParams(params), area } }).catch(() => undefined);
   }
 
   /**
