@@ -12,6 +12,11 @@ export interface ContainerClient {
    * The `general` scope has no identifier: its session opens under the one the portal passes to `open`.
    */
   propsFor(identifier?: string, scope?: Scope): MountProps;
+  /**
+   * What a portal receives on a public route of a tenant (no sign-in): an empty session that cannot open or close the real one,
+   * and a client that never sends `Authorization`, even when the person is signed in elsewhere.
+   */
+  anonymousPropsFor(identifier: string): MountProps;
 }
 
 /** The gateway URL is read here only: a runtime global set by the page, else the page's own origin (the gateway serves it). */
@@ -73,6 +78,11 @@ export function createContainerClient(options: { baseUrl: string; fetch?: typeof
 
   return {
     store,
+    anonymousPropsFor(identifier: string) {
+      if (!isTenantIdentifier(identifier)) throw new Error('a public mount needs a valid company identifier');
+      const session: Session = { roles: [], permissions: [], open: () => undefined, close: () => undefined };
+      return { apiClient: anonymous, session, identifier, scope: 'tenant' };
+    },
     propsFor(identifier?: string, scope?: Scope) {
       if (scope === 'general') return general();
       const session = store.of(identifier);

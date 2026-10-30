@@ -16,6 +16,11 @@ import { OperatorSidebarComponent } from './operator-sidebar.component';
 
 export const IDENTITY_PORTAL = 'identity-audit-portal';
 
+/** The portal and the area that draw the public offer (route `/t/:identifier/catalogo`); the three client pages of the offer are public. */
+export const COMMERCIAL_PORTAL = 'commercial-reservation-portal';
+export const PUBLIC_OFFER_AREA = 'tours';
+const PUBLIC_AREAS: readonly string[] = [PUBLIC_OFFER_AREA, 'lodging', 'gastronomy'];
+
 type View =
   | { kind: 'loading' }
   | { kind: 'not-found' }
@@ -91,11 +96,13 @@ export class PortalPageComponent {
     if (manifest === 'failed') return { kind: 'unavailable', remote };
     const url = Object.hasOwn(manifest, remote) ? entryUrl(manifest[remote]) : undefined;
     // An area asked through `navigate` that the manifest does not list is "not available", not a mistyped address.
-    const area = this.query().get('area') ?? undefined;
-    const asked = area !== undefined;
-    if (!url) return fixed || asked ? { kind: 'unavailable', remote } : { kind: 'not-found' };
+    const asked = this.query().get('area') ?? undefined;
+    const anonymous = this.route.snapshot.data['anonymous'] === true;
+    // A public route opens its own area; the query may only choose another public one.
+    const area = anonymous ? (asked !== undefined && PUBLIC_AREAS.includes(asked) ? asked : (this.route.snapshot.data['area'] as string)) : asked;
+    if (!url) return fixed || asked !== undefined ? { kind: 'unavailable', remote } : { kind: 'not-found' };
     const scope = this.route.snapshot.data['scope'] as Scope | undefined;
-    const props = this.propsFor(identifier, scope);
+    const props = this.propsFor(identifier, scope, anonymous);
     const roles = props.session.roles;
     // Only a tenant mount of a portal that declared the flag, for an operator: never the sign-in, the platform or a customer.
     const draws = !fixed && scope === undefined && identifier !== undefined && chromeFor(manifest[remote], roles);
@@ -184,8 +191,8 @@ export class PortalPageComponent {
    * After the portal opens a full session, the person goes back to the url the guard kept; without one, an operator of a tenant
    * goes to the identity area, because the sign-in route draws no sidebar and that area gets the container's one.
    */
-  private propsFor(identifier: string | undefined, scope: Scope | undefined): MountProps {
-    const props = this.client.propsFor(identifier, scope);
+  private propsFor(identifier: string | undefined, scope: Scope | undefined, anonymous = false): MountProps {
+    const props = anonymous && identifier !== undefined ? this.client.anonymousPropsFor(identifier) : this.client.propsFor(identifier, scope);
     const real = props.session;
     // Only the sign-in route carries a fixed remote (route data); a portal mounted in an area is never sent to another one.
     const onSignIn = this.route.snapshot.data['remote'] !== undefined;
