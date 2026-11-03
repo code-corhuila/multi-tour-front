@@ -27,6 +27,7 @@ describe('toAccentVariables', () => {
     expect(toAccentVariables({ primaryColor: 1, secondaryColor: null } as never)).toEqual({});
   });
 });
+
 describe('isVisualIdentity', () => {
   it('U-a_pair_of_valid_colors_is_a_visual_identity', () => {
     expect(isVisualIdentity({ primaryColor: '#1E6F69', secondaryColor: '#184f4d' })).toBe(true);

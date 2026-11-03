@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { toAccentVariables, VisualIdentity } from './visual-identity';
+import { isVisualIdentity, toAccentVariables, VisualIdentity } from './visual-identity';
 
 /**
  * The colors of the tenant's area, shared by the tenant shell (which paints them) and the portal page (which
@@ -24,8 +24,6 @@ export class TenantVisualIdentity {
   }
 
   private valid(value: unknown): VisualIdentity | null {
-    const { primaryColor, secondaryColor } = (value ?? {}) as Partial<VisualIdentity>;
-    if (Object.keys(toAccentVariables({ primaryColor, secondaryColor } as VisualIdentity)).length === 0) return null;
-    return { primaryColor: primaryColor as string, secondaryColor: secondaryColor as string };
+    return isVisualIdentity(value) ? { primaryColor: value.primaryColor, secondaryColor: value.secondaryColor } : null;
   }
 }
