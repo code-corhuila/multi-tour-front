@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toAccentVariables } from './visual-identity';
+import { isVisualIdentity, toAccentVariables } from './visual-identity';
 
 describe('toAccentVariables', () => {
   it('U-profile_colors_become_accent_variables', () => {
@@ -25,5 +25,16 @@ describe('toAccentVariables', () => {
       expect(toAccentVariables({ primaryColor: '#1e6f69', secondaryColor: value }), value).toEqual({});
     }
     expect(toAccentVariables({ primaryColor: 1, secondaryColor: null } as never)).toEqual({});
+  });
+});
+
+describe('isVisualIdentity', () => {
+  it('U-a_pair_of_valid_colors_is_a_visual_identity', () => {
+    expect(isVisualIdentity({ primaryColor: '#1E6F69', secondaryColor: '#184f4d' })).toBe(true);
+  });
+
+  it('U-anything_else_is_not: not an object, a missing color, a malformed or a non-string one', () => {
+    const none = [undefined, null, 'x', 7, [], {}, { primaryColor: '#1e6f69' }, { primaryColor: 'red', secondaryColor: '#184f4d' }, { primaryColor: 1, secondaryColor: null }];
+    for (const value of none) expect(isVisualIdentity(value), JSON.stringify(value)).toBe(false);
   });
 });
