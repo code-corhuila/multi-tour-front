@@ -203,6 +203,10 @@ export class PortalPageComponent {
       get roles() {
         return real.roles;
       },
+      // the portals decide what to draw by these (the claim `permissions`, or what the roles grant)
+      get permissions() {
+        return real.permissions;
+      },
       get access() {
         return real.access;
       },
