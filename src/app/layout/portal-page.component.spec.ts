@@ -301,6 +301,18 @@ describe('PortalPageComponent', () => {
     client.store.of('acme').close();
   });
 
+  // HU-OPS-003: a portal decides what to draw by the special permissions of the person; the session it receives must carry them.
+  it('U·container_passes_the_permissions_of_the_session_to_the_portal (tenant mount)', async () => {
+    const { fixture, mount, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const { session } = mount.mock.calls[0][1];
+    expect(session.permissions).toEqual([]);
+    client.store.of('acme').open(answer(jwt(['TENANT_ADMINISTRATOR'], { permissions: ['MANAGE_DEPARTURE_EXECUTION', 'MANAGE_CASH'] })));
+    expect(session.permissions).toEqual(['MANAGE_DEPARTURE_EXECUTION', 'MANAGE_CASH']);
+    client.store.of('acme').close();
+    expect(session.permissions).toEqual([]);
+  });
+
   it('U·the_general_login_session_follows_the_name_of_the_session_it_opens', async () => {
     const { fixture, mount, client } = setup({ remote: 'identity-audit-portal', scope: 'general' });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
