@@ -1,9 +1,8 @@
 import { expect, Page, test } from '@playwright/test';
-import { areaText, goTo, openCommercialAs, sidebarItems } from './support/operator-session';
+import { areaText, goTo, openCommercialAs, sidebarItems, TINY_PNG } from './support/operator-session';
 
 // HU-COM-001 (manage the operational catalog), portal spec 001-, AC-P1.x. One criterion per test.
-// Not covered yet: AC-P1.1 and AC-P1.3 (the new-service form also requires the operating cost and the image: the check is written
-// and runs in the next window). Not covered here, by design of the spec: AC-P1.8 (the API refuses a capacity below the held seats: needs the real
+// Not covered here, by design of the spec: AC-P1.8 (the API refuses a capacity below the held seats: needs the real
 // service) and AC-P1.12 (one Idempotency-Key per double submit: unit test on the HTTP adapter).
 const ADMINISTRATOR = ['TENANT_ADMINISTRATOR'];
 const COLLABORATOR = ['OPERATIONAL_COLLABORATOR'];
@@ -138,4 +137,23 @@ test('AC-P1.10 · the Accountant is denied the catalog', async ({ page }) => {
   await goTo(page, 'Catálogos');
   await expect(area(page)).toContainText('No tienes acceso al catálogo.');
   await page.screenshot({ path: `${SHOTS}/p1-10-contador.png`, fullPage: true });
+});
+
+test('AC-P1.1 and AC-P1.3 · a tour typed with its values appears in the list without a reload', async ({ page }) => {
+  await openCommercialAs(page, ADMINISTRATOR);
+  await goTo(page, 'Catálogos');
+  await page.getByRole('button', { name: 'Nuevo servicio' }).first().click();
+  await page.getByLabel('Nombre comercial').fill('Tour de prueba e2e');
+  await page.getByLabel('Capacidad / cupo').fill('12');
+  await page.getByLabel('Tarifa base').fill('150000');
+  await page.getByLabel('Costo operativo base').fill('50000');
+  await page.locator('input[type=file]').first().setInputFiles(TINY_PNG);
+  await page.getByRole('button', { name: 'Guardar y publicar' }).click();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${SHOTS}/p1-01-despues-de-guardar.png`, fullPage: true });
+  await goTo(page, 'Catálogos');
+  await page.getByRole('button', { name: 'Ver tours' }).first().click();
+  const row = area(page).locator('tbody tr', { hasText: 'Tour de prueba e2e' });
+  await expect(row).toContainText('$150.000');
+  await expect(row).toContainText('Activo');
 });
