@@ -1,8 +1,7 @@
 import { expect, Page, test } from '@playwright/test';
-import { areaText, goTo, openCommercialAs, sidebarItems } from './support/operator-session';
+import { areaText, goTo, openCommercialAs, sidebarItems, TINY_PNG } from './support/operator-session';
 
 // HU-COM-002 (manage associated establishments), portal spec 002-, AC-PE.x. One criterion per test.
-// Not covered yet: AC-PE.1 and AC-PE.3 (the registration form needs an image: the check runs in the next window).
 // Not covered here: AC-PE.13 (a reason when the state changes) and AC-PE.15 (error without email or phone) are out of scope of
 // HU-COM-002 by the amendment of 2026-10-26 (multi-tour-docs 513, state sync in docs 856), not signed yet. The registration with
 // an image and the real list need the real service; AC-PE.8 (no room, dish or rate column) and AC-PE.9 (no delete) are component tests.
@@ -66,3 +65,18 @@ for (const [role, label] of [['MANAGER', 'Gerente'], ['ANALYST', 'Analista']] as
     await page.screenshot({ path: `${SHOTS}/pe-10-${role.toLowerCase()}.png`, fullPage: true });
   });
 }
+
+test('AC-PE.1 and AC-PE.3 · an establishment registered with its name, information and image appears in the list', async ({ page }) => {
+  await openCommercialAs(page, ADMINISTRATOR);
+  await goTo(page, 'Catálogos');
+  await page.getByRole('button', { name: 'Gestionar establecimientos' }).first().click();
+  await page.getByRole('button', { name: 'Agregar establecimiento' }).first().click();
+  await page.getByLabel('Tipo de establecimiento').first().selectOption({ index: 1 });
+  await page.getByLabel('Nombre del establecimiento').fill('Hotel de prueba e2e');
+  await page.getByLabel('Información comercial').fill('Contacto: contacto@hotel-e2e.test');
+  await page.locator('input[type=file]').first().setInputFiles(TINY_PNG);
+  await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${SHOTS}/pe-01-despues-de-guardar.png`, fullPage: true });
+  await expect(area(page).locator('tbody tr', { hasText: 'Hotel de prueba e2e' })).toContainText('Activo');
+});
