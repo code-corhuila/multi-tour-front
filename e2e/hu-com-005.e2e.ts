@@ -3,9 +3,8 @@ import { areaText, fillHolder, openCommercialAs, openTourDetail } from './suppor
 
 // HU-COM-005 (register the lead customer and companions), portal spec 005-, AC-PC.x. One criterion per test.
 // The operator form already draws "Buscar cliente existente" (the customer search route, api 225 and portal 233); its check is
-// not written yet and the selector criterion of 005 and 007 is pending for the next window. Here the holder and the companions are typed inside the reservation (screen 21 of the customer and the form of the
-// operator): the customers adapter still answers "not in the contract" for the group, the search and addCompanion, so the
-// separate group screen cannot be shown against the container. Not covered here: AC-PC.2, AC-PC.3, AC-PC.5 to AC-PC.10 and
+// not written yet and the selector criterion of 005 and 007 is pending for the next window. Here the holder is typed inside the
+// reservation (screen 21 of the customer); the separate group screen is not shown against the container. Not covered here: AC-PC.2, AC-PC.3, AC-PC.5 to AC-PC.10 and
 // AC-PC.12 (companion group, duplicate document, high-risk block and sensitive data masked: component tests; they need the
 // customers service or the high-risk tour of the real catalog), AC-PC.16 (permission to read sensitive data: identity service).
 const CUSTOMER = ['FINAL_CUSTOMER'];
