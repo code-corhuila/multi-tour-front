@@ -97,3 +97,12 @@ export async function goTo(page: Page, label: string, heading: string = label): 
 /** The labels of the sidebar items the shell draws for the signed-in role, in order. */
 export const sidebarItems = async (page: Page): Promise<string[]> =>
   (await page.locator('nav').first().innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+
+/** Customer screen 21: the holder of the reservation (name, document, phone, email, birth date). */
+export async function fillHolder(page: Page): Promise<void> {
+  await page.getByLabel('Nombre completo').first().fill('Ana Prueba');
+  await page.getByLabel('Documento de identidad').first().fill('1012345678');
+  await page.getByLabel(/^Teléfono/).first().fill('3001112233');
+  await page.getByLabel('Correo electrónico').first().fill('ana@example.test');
+  await page.getByLabel('Fecha de nacimiento').first().fill('1990-01-02');
+}
