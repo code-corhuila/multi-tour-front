@@ -2,7 +2,6 @@ import { expect, Page, test } from '@playwright/test';
 import { areaText, fillHolder, openTourDetail, goTo, openCommercialAs, setDemoNow, setDemoQuery } from './support/operator-session';
 
 // HU-COM-009 (register a payment or a partial payment), portal spec 009-, AC-PY.x. One criterion per test.
-// Not covered yet: AC-PY.1 and AC-PY.14 (the customer partial transfer to "Comprobante recibido", written for the next window).
 // AC-PY.12 (minimum deposit) is checked on the payment screen of the operator (w4-pending); screen 21 of the customer accepts any
 // deposit up to the final value (the spec marks the refusal on registration as PROPUESTO, DP-PY5 and its amendment, pending approval).
 // Not covered here: AC-PY.13 (a forged amount in the navigation parameters: unit test), AC-PY.16 and AC-PY.19 (cash
@@ -126,4 +125,34 @@ test('AC-PY.10 and AC-PY.11 · an empty amount is marked beside the field and a 
   await page.waitForTimeout(800);
   expect((await areaText(page)).match(/\$100\.000 · Efectivo/g)?.length ?? 1).toBe(1);
   await page.screenshot({ path: `${SHOTS}/py-10-un-pago.png`, fullPage: true });
+});
+
+test('AC-PY.12 · on the payment screen a first deposit below the minimum is refused beside the field and nothing is registered', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  await area(page).locator('tbody tr', { hasText: '#RES-1841' }).first().getByRole('button', { name: 'Gestionar pago' }).click();
+  await page.locator('[name=amount]').fill('1000');
+  await page.getByRole('button', { name: /Registrar pago recibido|Registrar comprobante/ }).first().click();
+  await expect(area(page)).toContainText('El abono debe ser como mínimo');
+  expect(await areaText(page)).not.toContain('Registrado por');
+  await page.screenshot({ path: `${SHOTS}/py-12-abono-bajo-en-13.png`, fullPage: true });
+});
+
+test('AC-PY.1 and AC-PY.14 · the customer pays a partial transfer and the proof lands En validación', async ({ page }) => {
+  await openCommercialAs(page, ['FINAL_CUSTOMER']);
+  await toFinish(page);
+  await page.selectOption('[name=paymentMethod]', 'BANK_TRANSFER');
+  await page.check('input[name=paymentType][value=PARTIAL]');
+  await page.fill('[name=deposit]', '100000');
+  await page.check('[name=conditions]');
+  await page.check('[name=terms]');
+  await fillHolder(page);
+  await press(page, /Confirmar reserva|Crear reserva/);
+  await expect(area(page)).toContainText(/Reserva creada: RES-\d+/);
+  await press(page, 'Continuar al pago');
+  await page.setInputFiles('#crp-transfer-proof', PDF);
+  await press(page, 'Enviar comprobante para validación');
+  await expect(area(page)).toContainText('Comprobante recibido');
+  await expect(area(page)).toContainText('En validación');
+  await page.screenshot({ path: `${SHOTS}/py-14-comprobante-recibido.png`, fullPage: true });
 });

@@ -106,3 +106,6 @@ export async function fillHolder(page: Page): Promise<void> {
   await page.getByLabel('Correo electrónico').first().fill('ana@example.test');
   await page.getByLabel('Fecha de nacimiento').first().fill('1990-01-02');
 }
+
+/** A 1x1 PNG for the forms that require an image (new service, new establishment). */
+export const TINY_PNG = { name: 'imagen-e2e.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') };
