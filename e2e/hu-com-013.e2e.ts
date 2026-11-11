@@ -61,3 +61,15 @@ test('AC-CN.7 · the Analyst gets no cancel action', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Cancelar o modificar reserva', exact: true })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/cn-07-analista.png`, fullPage: true });
 });
+
+test('AC-CN.10 · a cancellation of a reservation with validated payments names the value to refund', async ({ page }) => {
+  await openCommercialAs(page, ['OPERATIONAL_COLLABORATOR']);
+  await goTo(page, 'Reservas');
+  await area(page).locator('tbody tr', { hasText: '#RES-1839' }).first().getByRole('button', { name: 'Ver detalle' }).click();
+  await page.getByRole('button', { name: 'Cancelar o modificar reserva', exact: true }).click();
+  await page.locator('select').nth(1).selectOption({ index: 1 });
+  await page.getByLabel(/Causal/).fill('Causa no atribuible al cliente (e2e)');
+  await page.getByRole('button', { name: 'Registrar novedad', exact: true }).click();
+  await expect(area(page)).toContainText(/Cancelación registrada\. Valor a devolver/);
+  await page.screenshot({ path: `${SHOTS}/cn-10-valor-a-devolver.png`, fullPage: true });
+});

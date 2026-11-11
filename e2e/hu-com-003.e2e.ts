@@ -79,3 +79,15 @@ test('AC-PD.13 · a rule in force for a tour changes the value the customer sees
   expect(before).toMatch(/% de descuento/);
   await page.screenshot({ path: `${SHOTS}/pd-13-descuentos-vigentes.png`, fullPage: true });
 });
+
+test('AC-PD.13 · a rule in force for the tour puts the discount line in the quote of a new reservation', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  await page.getByRole('button', { name: 'Crear reserva' }).first().click();
+  await page.locator('[name=serviceId]').selectOption({ index: 1 });
+  await page.locator('[name=departureId]').selectOption({ index: 1 });
+  await page.locator('[name=people]').fill('1');
+  await expect(area(page)).toContainText('Descuentos aplicables');
+  await expect(area(page)).toContainText('20% de descuento');
+  await page.screenshot({ path: `${SHOTS}/pd-13-cotizacion.png`, fullPage: true });
+});
