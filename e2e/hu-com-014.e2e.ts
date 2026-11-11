@@ -2,7 +2,6 @@ import { expect, Page, test } from '@playwright/test';
 import { areaText, openCommercialAs } from './support/operator-session';
 
 // HU-COM-014 (consult my reservations and my supports), portal spec 014-, AC-MP.x. One criterion per test.
-// Not covered yet: AC-MP.4 ("Continuar pago" is not a button of the card on Mis pagos in this build: to be read in the next window).
 // Not covered here: AC-MP.5 and AC-MP.12 (filter and read by the real customer: the demo maps every final customer to one
 // demo customer), AC-MP.7 (the support download waits for the API and the database), AC-MP.6 (static test) and AC-MP.8 (four
 // states: component test).
@@ -60,4 +59,12 @@ test('AC-MP.5 · a visitor with an unknown role lands on the public offer with n
   await openCommercialAs(page, ['ROL_DESCONOCIDO_E2E']);
   await expect(page.getByRole('button', { name: /^Mis pagos/ })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/mp-05-visitante.png`, fullPage: true });
+});
+
+test('AC-MP.4 · "Continuar pago" on a reservation card of Mis reservas opens the screen to complete its payment', async ({ page }) => {
+  await openCommercialAs(page, CUSTOMER);
+  await press(page, 'Ver mis reservas');
+  await press(page, 'Continuar pago');
+  await expect(area(page)).toContainText('Completar el pago de la reserva');
+  await page.screenshot({ path: `${SHOTS}/mp-04-continuar-pago.png`, fullPage: true });
 });
