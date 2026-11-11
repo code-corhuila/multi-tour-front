@@ -95,8 +95,11 @@ export async function goTo(page: Page, label: string, heading: string = label): 
 }
 
 /** The labels of the sidebar items the shell draws for the signed-in role, in order. */
-export const sidebarItems = async (page: Page): Promise<string[]> =>
-  (await page.locator('nav').first().innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+export const sidebarItems = async (page: Page): Promise<string[]> => {
+  const nav = page.locator('nav').first();
+  const buttons = (await nav.getByRole('button').allInnerTexts()).map((s) => s.trim()).filter(Boolean);
+  return buttons.length > 0 ? buttons : (await nav.innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+};
 
 /** Customer screen 21: the holder of the reservation (name, document, phone, email, birth date). */
 export async function fillHolder(page: Page): Promise<void> {

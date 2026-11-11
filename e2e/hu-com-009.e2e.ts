@@ -2,8 +2,8 @@ import { expect, Page, test } from '@playwright/test';
 import { areaText, fillHolder, openTourDetail, goTo, openCommercialAs, setDemoNow, setDemoQuery } from './support/operator-session';
 
 // HU-COM-009 (register a payment or a partial payment), portal spec 009-, AC-PY.x. One criterion per test.
-// AC-PY.12 (minimum deposit) is checked on the payment screen of the operator (w4-pending); screen 21 of the customer accepts any
-// deposit up to the final value (the spec marks the refusal on registration as PROPUESTO, DP-PY5 and its amendment, pending approval).
+// AC-PY.12 follows DP-PY5 as decided in the portal on develop: a deposit below the minimum is registered and the reservation stays
+// Parcial (it is confirmed when the validated value reaches the minimum); nothing is refused.
 // Not covered here: AC-PY.13 (a forged amount in the navigation parameters: unit test), AC-PY.16 and AC-PY.19 (cash
 // income and the credit balance rule: unit tests on the payment rules), AC-PY.17 (the payment parameters of the tenant
 // are read from the real service) and the real cash session (HU-COM-009 depends on cash-reporting, other team).
@@ -127,15 +127,18 @@ test('AC-PY.10 and AC-PY.11 · an empty amount is marked beside the field and a 
   await page.screenshot({ path: `${SHOTS}/py-10-un-pago.png`, fullPage: true });
 });
 
-test('AC-PY.12 · on the payment screen a first deposit below the minimum is refused beside the field and nothing is registered', async ({ page }) => {
+test('AC-PY.12 · a first deposit below the minimum is registered and the reservation stays Parcial until the validated value reaches the minimum (DP-PY5, the PDR path)', async ({ page }) => {
   await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
   await goTo(page, 'Reservas');
   await area(page).locator('tbody tr', { hasText: '#RES-1841' }).first().getByRole('button', { name: 'Gestionar pago' }).click();
+  await expect(area(page)).toContainText('Abono mínimo para confirmar la reserva');
   await page.locator('[name=amount]').fill('1000');
   await page.getByRole('button', { name: /Registrar pago recibido|Registrar comprobante/ }).first().click();
-  await expect(area(page)).toContainText('El abono debe ser como mínimo');
-  expect(await areaText(page)).not.toContain('Registrado por');
-  await page.screenshot({ path: `${SHOTS}/py-12-abono-bajo-en-13.png`, fullPage: true });
+  await expect(area(page)).toContainText('Registrado por');
+  await expect(area(page)).toContainText('Parcial');
+  await expect(area(page)).toContainText('Pendiente de pago');
+  expect(await areaText(page)).not.toContain('El abono debe ser como mínimo');
+  await page.screenshot({ path: `${SHOTS}/py-12-abono-bajo-queda-parcial.png`, fullPage: true });
 });
 
 test('AC-PY.1 and AC-PY.14 · the customer pays a partial transfer and the proof lands En validación', async ({ page }) => {
