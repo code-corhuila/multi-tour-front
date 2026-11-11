@@ -92,3 +92,17 @@ test('AC-RP.7 · the customer rejects the proposal: the reservation is cancelled
   await expect(area(page)).toContainText(REJECTED);
   await page.screenshot({ path: `${SHOTS}/rp-07-rechazada.png`, fullPage: true });
 });
+
+test('AC-RP.8 · the Administrator cancels a reservation of the affected departure with the refund of 100 %', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  const toggle = page.getByRole('button', { name: /Ver todas las reservas|Ver reservas activas/ }).first();
+  await toggle.waitFor();
+  if (/todas/.test(await toggle.innerText())) await toggle.click();
+  await area(page).locator('tbody tr', { hasText: '#RES-1829' }).first().getByRole('button', { name: 'Ver detalle' }).click();
+  await page.getByRole('button', { name: 'Propuesta de reprogramación', exact: true }).first().click();
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: 'Cancelar con devolución 100 %' }).click();
+  expect(await areaText(page)).toMatch(/Cancelada|devolución/i);
+  await page.screenshot({ path: `${SHOTS}/rp-08-cancelar-con-devolucion.png`, fullPage: true });
+});
