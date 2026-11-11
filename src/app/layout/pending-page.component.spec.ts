@@ -66,6 +66,28 @@ describe('blank screen of the pending entries', () => {
     expect(el.querySelector('aside')).toBeNull();
   });
 
+  // The mockup shell is as tall as the window (min-height 100vh): with an empty content the sidebar must not shrink to its list.
+  it('U·the_sidebar_shell_fills_the_viewport_like_the_mockup', async () => {
+    const { el } = await render('salidas');
+    expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).minHeight).toBe('100vh');
+  });
+
+  // The operations-cost stylesheet is global and also defines .operator-content (width 1240px): the shell must not inherit it.
+  it('U·the_content_area_fills_its_column_up_to_1420px_like_the_mockup_whatever_a_portal_styles', async () => {
+    const style = document.createElement('style');
+    style.textContent = '.operator-content{width:min(100%,1240px)}';
+    document.head.appendChild(style);
+    try {
+      const { el } = await render('salidas');
+      const content = getComputedStyle(el.querySelector('.operator-content') as HTMLElement);
+      expect(content.width).toBe('100%');
+      expect(content.maxWidth).toBe('1420px');
+      expect(getComputedStyle(el.querySelector('.operator-shell') as HTMLElement).background).toContain('#f5f7f7');
+    } finally {
+      style.remove();
+    }
+  });
+
   it('U·cerrar_sesion_closes_the_session', async () => {
     const { el, client } = await render('salidas');
     (Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Cerrar sesión')) as HTMLButtonElement).click();

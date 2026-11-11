@@ -28,6 +28,23 @@ test('E2E· unknown_identifier_and_unknown_route_show_404', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
 });
 
+test('E2E·inactive_tenant_shows_the_notice_and_mounts_no_area', async ({ page }) => {
+  // The area is protected, so it ends at the sign-in (allowed, RN-FRT-24); the area itself must never mount.
+  await page.goto('/t/dormant/areas/stub-react');
+  await expect(page.getByText('Dormant Tours is not active')).toBeVisible();
+  await expect(page.getByText('Stub React remote')).toHaveCount(0);
+  await expect(page.getByText('Stub sign-in')).toBeVisible();
+  await page.goto('/t/dormant');
+  await expect(page.getByText('Dormant Tours is not active')).toBeVisible();
+  await expect(page.getByText('Stub sign-in')).toHaveCount(0);
+});
+
+test('E2E·inactive_tenant_still_reaches_the_sign_in', async ({ page }) => {
+  await page.goto('/t/dormant/ingresar');
+  await expect(page.getByText('Dormant Tours is not active')).toBeVisible();
+  await expect(page.getByText('Stub sign-in')).toBeVisible();
+});
+
 test('E2E· one_portal_down_only_its_area_fails', async ({ page }) => {
   await page.goto('/t/acme/areas/stub-down');
   await signInThroughThePortal(page);

@@ -36,6 +36,16 @@ describe('OperatorSidebarComponent', () => {
     expect(el.textContent).toContain('Administrador del tenant');
   });
 
+  // The sign-out sits at the bottom of the window, never at the bottom of a page whose height changes while its content loads.
+  it('U·sidebar_stays_fixed_to_the_window_so_cerrar_sesion_never_jumps', () => {
+    const { el } = render();
+    const host = getComputedStyle(el.querySelector('app-operator-sidebar') as HTMLElement);
+    expect(host.position).toBe('sticky');
+    expect(host.top).toBe('0px');
+    expect(host.height).toBe('100vh');
+    expect(getComputedStyle(el.querySelector('aside') as HTMLElement).overflowY).toBe('auto');
+  });
+
   it('U·sidebar_entry_opens_the_portal_area_through_the_same_route_as_navigate', () => {
     const { el } = render();
     const link = el.querySelector('a[href*="/t/acme/areas/commercial-reservation-portal"]') as HTMLAnchorElement;

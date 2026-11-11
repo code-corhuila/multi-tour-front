@@ -41,7 +41,7 @@ The Playwright checks (`e2e/*.e2e.ts`) run against the production image on port 
 4. `npm run e2e` (base URL `http://localhost:8080`; `E2E_BASE_URL` moves it; run `npx playwright install chromium` once).
 5. `docker rm -f front-e2e`. No server is left running.
 
-A portal whose module is not in `portals/` has its mounted-portal check skipped and its area shows "not available". Each run keeps one screenshot per area in `test-results/areas/` as evidence, not as a pixel baseline.
+The checks of the commercial reservation portal (`e2e/proof-review.e2e.ts` and the `hu-com-*.e2e.ts` files) need the demo build of that module (`npm run build:module:demo`) in `portals/` and a session with roles, which `e2e/support/operator-session.ts` opens through its own identity stub; with another module, or none, they are skipped. A portal whose module is not in `portals/` has its mounted-portal check skipped and its area shows "not available". Each run keeps one screenshot per area in `test-results/areas/` as evidence, not as a pixel baseline.
 
 The CI runs `npm ci`, `npm run build`, `npm test`, builds and checks the image, then runs the browser checks on it, on every pull request to `develop` and `qa`.
 

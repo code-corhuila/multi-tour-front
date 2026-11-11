@@ -11,12 +11,32 @@ const MANIFEST: Record<string, ManifestEntry> = {
 const PLAIN: ManifestEntry = 'portals/plain.js';
 
 describe('operator navigation list', () => {
-  it('U·sidebar_lists_the_eleven_entries_for_the_administrator', () => {
+  it('U·sidebar_lists_the_twelve_entries_for_the_administrator', () => {
     const items = operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR']);
     expect(items.map((i) => i.label)).toEqual([
-      'Resumen', 'Reservas', 'Salidas', 'Catálogos', 'Descuentos', 'Pagos', 'Caja', 'Operación', 'Notificaciones', 'Reportes', 'Colaboradores',
+      'Resumen', 'Reservas', 'Salidas', 'Catálogos', 'Descuentos', 'Pagos', 'Caja', 'Operación', 'Notificaciones', 'Reportes', 'Auditoría', 'Colaboradores',
     ]);
-    expect(OPERATOR_NAV).toHaveLength(11);
+    expect(OPERATOR_NAV).toHaveLength(12);
+  });
+
+  // The sidebar of each role of the landing page (indice.html, roles of the tenant): the optional read-only roles drop what is not theirs.
+  it.each([
+    ['MANAGER', ['Resumen', 'Reservas', 'Salidas', 'Catálogos', 'Pagos', 'Caja', 'Operación', 'Reportes', 'Auditoría']],
+    ['ACCOUNTANT', ['Resumen', 'Reservas', 'Pagos', 'Caja', 'Operación', 'Reportes', 'Auditoría']],
+    ['ANALYST', ['Resumen', 'Reservas', 'Salidas', 'Catálogos', 'Pagos', 'Operación', 'Reportes', 'Auditoría']],
+  ])('U·sidebar_of_the_%s_role_follows_the_landing_page', (role, labels) => {
+    expect(operatorNav(MANIFEST, [role]).map((i) => i.label)).toEqual(labels);
+  });
+
+  it('U·auditoria_is_offered_to_the_administrator_and_the_read_only_roles_but_not_to_the_collaborator', () => {
+    const has = (role: string) => operatorNav(MANIFEST, [role]).some((i) => i.label === 'Auditoría');
+    expect(['TENANT_ADMINISTRATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST'].every(has)).toBe(true);
+    expect(has('OPERATIONAL_COLLABORATOR')).toBe(false);
+  });
+
+  it('U·auditoria_opens_the_blank_screen_until_the_identity_portal_reads_the_area', () => {
+    const flagged = { ...MANIFEST, 'identity-audit-portal': { url: 'portals/id.js', chrome: true } };
+    expect(operatorNav(flagged, ['TENANT_ADMINISTRATOR']).find((i) => i.label === 'Auditoría')).toMatchObject({ portal: 'pendiente', area: 'auditoria', link: true });
   });
 
   it('U·sidebar_hides_descuentos_and_colaboradores_for_the_collaborator', () => {

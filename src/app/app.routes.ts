@@ -4,7 +4,7 @@ import { DEV_ROUTES } from './core/auth/dev-routes';
 import { LandingComponent } from './landing/landing.component';
 import { NotFoundComponent } from './layout/not-found.component';
 import { PendingPageComponent } from './layout/pending-page.component';
-import { IDENTITY_PORTAL, PortalPageComponent } from './layout/portal-page.component';
+import { COMMERCIAL_PORTAL, IDENTITY_PORTAL, PUBLIC_OFFER_AREA, PortalPageComponent } from './layout/portal-page.component';
 import { TenantShellComponent } from './tenant/tenant-shell.component';
 import { tenantResolver } from './tenant/tenant.resolver';
 
@@ -29,7 +29,12 @@ export const routes: Routes = [
     component: TenantShellComponent,
     resolve: { tenant: tenantResolver },
     // The public home of the tenant needs no session; everything else is the portal's.
-    children: [{ path: '', pathMatch: 'full', component: LandingComponent }, ...portalRoutes],
+    children: [
+      { path: '', pathMatch: 'full', component: LandingComponent },
+      // The public offer (HU-COM-006, ADR-004 D5): no guard, an anonymous session, the commercial portal at its offer area.
+      { path: 'catalogo', component: PortalPageComponent, data: { remote: COMMERCIAL_PORTAL, anonymous: true, area: PUBLIC_OFFER_AREA } },
+      ...portalRoutes,
+    ],
   },
   ...DEV_ROUTES,
   { path: '**', component: NotFoundComponent },

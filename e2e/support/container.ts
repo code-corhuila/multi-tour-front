@@ -20,6 +20,7 @@ export const SHIPPED_MANIFEST: Record<string, string> = Object.fromEntries(
 );
 
 export const ACME = { identifier: 'acme', commercialName: 'Acme Tours', tenantStatus: 'ACTIVE' };
+export const DORMANT = { identifier: 'dormant', commercialName: 'Dormant Tours', tenantStatus: 'INACTIVE' };
 
 /** Answers the test manifest (plus `real` entries, served by the image itself) and the stub remotes. */
 export async function serveStubs(page: Page, real: Record<string, string> = {}): Promise<void> {
@@ -31,10 +32,11 @@ export async function serveStubs(page: Page, real: Record<string, string> = {}):
   });
 }
 
-/** The public profile of a tenant: `acme` exists, any other identifier answers 404. */
+/** The public profile of a tenant: `acme` is active, `dormant` is inactive, any other identifier answers 404. */
 export async function serveTenantProfile(page: Page): Promise<void> {
   await page.route('**/api/v1/identity-audit/public/tenants/*', (route) => {
     const identifier = route.request().url().split('/').pop();
+    if (identifier === 'dormant') return route.fulfill({ json: DORMANT });
     return identifier === 'acme'
       ? route.fulfill({ json: ACME })
       : route.fulfill({ status: 404, json: { error: 'NOT_FOUND', message: 'Not found', traceId: 't-1' } });

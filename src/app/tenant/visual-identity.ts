@@ -6,6 +6,13 @@ export interface VisualIdentity {
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
+/** The one definition of a valid visual identity: a pair of `#RRGGBB` strings. As a type guard it narrows an unknown profile value without a cast at each caller. */
+export function isVisualIdentity(value: unknown): value is VisualIdentity {
+  if (typeof value !== 'object' || value === null) return false;
+  const { primaryColor, secondaryColor } = value as Record<string, unknown>;
+  return typeof primaryColor === 'string' && typeof secondaryColor === 'string' && HEX_COLOR.test(primaryColor) && HEX_COLOR.test(secondaryColor);
+}
+
 /**
  * CSS variables for the tenant's area. Both colors must be `#RRGGBB`: anything else yields no variable, so a
  * malformed value never reaches the CSS and the platform defaults stay (RN-FRT-10, -12).
