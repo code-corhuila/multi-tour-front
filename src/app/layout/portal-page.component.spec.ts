@@ -139,6 +139,24 @@ describe('PortalPageComponent', () => {
     client.store.of('acme').close();
   });
 
+  // HU-COM-020: the guard sends the restricted Administrator of an inactive tenant to the sign-in with the requested url; after signing in it must go back there.
+  it('goes back to the requested url after the restricted Administrator of an inactive tenant signs in', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'], { access: 'restricted' })));
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/x');
+    client.store.of('acme').close();
+  });
+
+  it('does not send a restricted credential of another role or a temporary one back to the requested url', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['OPERATIONAL_COLLABORATOR'], { access: 'restricted' })));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'], { access: 'password-change' })));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
   it('takes the operator to the identity area when the requested url is not safe', async () => {
     const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '//evil.example/x' });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));

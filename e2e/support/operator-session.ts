@@ -21,8 +21,8 @@ export const DEMO_NOW = new Date(seededInstant('2026-10-13T09:00:00-05:00')).toI
 const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
 /** A development token (alg none, no signature check in the demo build): only the claims the container reads. */
-export function tokenOf(roles: string[], sub = 'demo-user'): string {
-  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ sub, roles, exp: Math.floor(Date.now() / 1000) + 86_400 })}.demo`;
+export function tokenOf(roles: string[], sub = 'demo-user', claims: object = {}): string {
+  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ sub, roles, exp: Math.floor(Date.now() / 1000) + 86_400, ...claims })}.demo`;
 }
 
 /** Stands for the identity portal, but opens the session with a token that carries the given roles. */
@@ -42,16 +42,16 @@ function identityStubOf(token: string): string {
  * `portals/`, see README) and a session whose token carries `roles`. The demo store lives in the page: every test
  * starts from the seeded reservations.
  */
-export async function openCommercialAs(page: Page, roles: string[]): Promise<void> {
+export async function openCommercialAs(page: Page, roles: string[], { claims = {}, tenant = 'acme' }: { claims?: object; tenant?: string } = {}): Promise<void> {
   // Only the demo build of the module has data and reads the demo clock; the CI image ships no module at all.
   const module = await page.request.get(`/${SHIPPED_MANIFEST[COMMERCIAL]}`);
   test.skip(!module.ok() || !(await module.text()).includes('demoFixtures'), 'the image has no demo build of the commercial reservation portal in portals/');
   await serveTenantProfile(page);
   await serveStubs(page, { [COMMERCIAL]: SHIPPED_MANIFEST[COMMERCIAL] });
   await page.route('**/stubs/identity-audit-portal.js', (route) =>
-    route.fulfill({ body: identityStubOf(tokenOf(roles)), contentType: 'text/javascript' }),
+    route.fulfill({ body: identityStubOf(tokenOf(roles, 'demo-user', claims)), contentType: 'text/javascript' }),
   );
-  await page.goto(COMMERCIAL_AREA);
+  await page.goto(`/t/${tenant}/areas/${COMMERCIAL}`);
   await expect(page.getByText('Stub sign-in')).toBeVisible();
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(new RegExp(`${COMMERCIAL}$`));
@@ -95,5 +95,20 @@ export async function goTo(page: Page, label: string, heading: string = label): 
 }
 
 /** The labels of the sidebar items the shell draws for the signed-in role, in order. */
-export const sidebarItems = async (page: Page): Promise<string[]> =>
-  (await page.locator('nav').first().innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+export const sidebarItems = async (page: Page): Promise<string[]> => {
+  const nav = page.locator('nav').first();
+  const buttons = (await nav.getByRole('button').allInnerTexts()).map((s) => s.trim()).filter(Boolean);
+  return buttons.length > 0 ? buttons : (await nav.innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
+};
+
+/** Customer screen 21: the holder of the reservation (name, document, phone, email, birth date). */
+export async function fillHolder(page: Page): Promise<void> {
+  await page.getByLabel('Nombre completo').first().fill('Ana Prueba');
+  await page.getByLabel('Documento de identidad').first().fill('1012345678');
+  await page.getByLabel(/^Teléfono/).first().fill('3001112233');
+  await page.getByLabel('Correo electrónico').first().fill('ana@example.test');
+  await page.getByLabel('Fecha de nacimiento').first().fill('1990-01-02');
+}
+
+/** A 1x1 PNG for the forms that require an image (new service, new establishment). */
+export const TINY_PNG = { name: 'imagen-e2e.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') };

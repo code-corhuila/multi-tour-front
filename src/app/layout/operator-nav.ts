@@ -67,8 +67,11 @@ export const roleLabel = (roles: readonly string[]): string => {
 };
 
 /** The entries these roles may see; each one is a link only when its portal is in the manifest and lets them in. */
-export function operatorNav(manifest: Record<string, ManifestEntry>, roles: readonly string[]): NavItem[] {
-  return OPERATOR_NAV.filter((e) => e.roles.some((role) => roles.includes(role))).map(({ label, portal, area, pending }) => {
+/** HU-COM-020: what the restricted access of an inactive tenant opens: the reservations and the payments, where the proofs and the refunds are. */
+const RESTRICTED_ENTRIES: readonly string[] = [COPY.entries.reservations, COPY.entries.payments];
+
+export function operatorNav(manifest: Record<string, ManifestEntry>, roles: readonly string[], restricted = false): NavItem[] {
+  return OPERATOR_NAV.filter((e) => e.roles.some((role) => roles.includes(role)) && (!restricted || RESTRICTED_ENTRIES.includes(e.label))).map(({ label, portal, area, pending }) => {
     const entry = Object.hasOwn(manifest, portal) ? manifest[portal] : undefined;
     const allowed = entry !== undefined && (entryRoles(entry)?.some((role) => roles.includes(role)) ?? true);
     // A pending entry is blank unless it is not fixed and its portal already runs inside the single sidebar.

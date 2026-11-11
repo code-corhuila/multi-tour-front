@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationStart, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
+import { CONTAINER_CLIENT } from '../core/client/container-client.token';
 import { NotFoundComponent } from '../layout/not-found.component';
 import { TenantLookup } from './tenant.resolver';
 import { TenantVisualIdentity } from './tenant-visual-identity';
@@ -53,11 +54,21 @@ export class TenantShellComponent {
   protected readonly identity = inject(TenantVisualIdentity);
   protected readonly theme = this.tenant.state === 'active' ? this.tenant.profile.identifier : null;
 
+  private readonly client = inject(CONTAINER_CLIENT, { optional: true });
   private readonly router = inject(Router);
   private readonly url = signal(this.router.url);
   /** Follows the address the router is going to (start, not end), so the outlet is gone before a target area is activated.
    *  An inactive tenant opens no area, but its sign-in stays reachable for the Administrator's restricted access. */
-  protected readonly signInOnly = computed(() => /^\/t\/[^/?#]+\/ingresar(?:[/?#]|$)/.test(this.url()));
+  protected readonly signInOnly = computed(
+    () => /^\/t\/[^/?#]+\/ingresar(?:[/?#]|$)/.test(this.url()) || (this.restrictedAdministrator() && /^\/t\/[^/?#]+\/areas\//.test(this.url())),
+  );
+
+  /** HU-COM-020: the session of this tenant is the restricted access of its Administrator; then an inactive tenant also opens the areas of its pending obligations. */
+  private restrictedAdministrator(): boolean {
+    if (this.tenant.state === 'unknown' || this.tenant.state === 'error') return false;
+    const session = this.client?.store.of(this.tenant.profile.identifier);
+    return session !== undefined && !!session.token && session.access === 'restricted' && session.roles.includes('TENANT_ADMINISTRATOR');
+  }
 
   constructor() {
     this.router.events

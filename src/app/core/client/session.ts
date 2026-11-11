@@ -30,11 +30,10 @@ function payloadOf(accessToken: string): Record<string, unknown> {
   }
 }
 
-/** An absent claim is a normal access; a present one that is not understood is treated as the most limited. */
+/** Only the exact values the restricted screens understand are kept; absent or any other value (exceptional, emergency, unknown) is a normal access. */
 function accessOf(payload: Record<string, unknown>): Access | undefined {
   const claim = payload['access'];
-  if (claim === undefined) return undefined;
-  return claim === 'password-change' ? claim : 'restricted';
+  return claim === 'password-change' || claim === 'restricted' ? claim : undefined;
 }
 
 /** The name the token may carry; blank or non-text means the container does not know it. */
