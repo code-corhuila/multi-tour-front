@@ -104,6 +104,7 @@ export class PortalPageComponent {
     if (!url) return fixed || asked !== undefined ? { kind: 'unavailable', remote } : { kind: 'not-found' };
     const scope = this.route.snapshot.data['scope'] as Scope | undefined;
     const props = this.propsFor(identifier, scope, anonymous);
+    // A public route hands only its own area; the other routes hand the plain values of the address (ADR-007).
     const initialParams = anonymous ? (area ? { area } : undefined) : initialParamsOf(this.query());
     const roles = props.session.roles;
     // Only a tenant mount of a portal that declared the flag, for an operator: never the sign-in, the platform or a customer.
