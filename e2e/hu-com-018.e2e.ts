@@ -21,10 +21,10 @@ async function toDetail(page: Page, code: string): Promise<void> {
   await expect(area(page)).toContainText('Detalle de reserva');
 }
 
-/** 10A → "Propuesta de reprogramación": the screen of the operator. */
+/** 10A → "Gestionar la reprogramación" (the box of an open episode): the screen of the operator. */
 async function toRescheduling(page: Page, code: string): Promise<void> {
   await toDetail(page, code);
-  await page.getByRole('button', { name: 'Propuesta de reprogramación', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Gestionar la reprogramación', exact: true }).first().click();
   await expect(page.locator('app-rescheduling-page [data-state]').first()).toBeVisible();
 }
 
@@ -59,13 +59,13 @@ test('AC-RP.2 · a reservation with a proof En validación cannot be rescheduled
 test('AC-RP.3 · the Analyst gets no "Propuesta de reprogramación" in 10A', async ({ page }) => {
   await openCommercialAs(page, ['ANALYST']);
   await toDetail(page, 'RES-1828');
-  await expect(page.getByRole('button', { name: /Propuesta de reprogramación|Enviar propuesta/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Gestionar la reprogramación|Propuesta de reprogramación|Enviar propuesta/ })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/rp-03-analista.png`, fullPage: true });
 });
 
 test('AC-RP.4 · an unknown role falls to the customer layout with no reschedule action', async ({ page }) => {
   await openCommercialAs(page, ['ROL_DESCONOCIDO_E2E']);
-  await expect(page.getByRole('button', { name: /Propuesta de reprogramación|Enviar propuesta|Cancelar con devolución 100 %|Responder propuesta/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Gestionar la reprogramación|Reprogramar|Propuesta de reprogramación|Enviar propuesta|Cancelar con devolución 100 %|Responder propuesta/ })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/rp-04-rol-desconocido.png`, fullPage: true });
 });
 
@@ -100,9 +100,20 @@ test('AC-RP.8 · the Administrator cancels a reservation of the affected departu
   await toggle.waitFor();
   if (/todas/.test(await toggle.innerText())) await toggle.click();
   await area(page).locator('tbody tr', { hasText: '#RES-1829' }).first().getByRole('button', { name: 'Ver detalle' }).click();
-  await page.getByRole('button', { name: 'Propuesta de reprogramación', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Gestionar la reprogramación', exact: true }).first().click();
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Cancelar con devolución 100 %' }).click();
   expect(await areaText(page)).toMatch(/Cancelada|devolución/i);
   await page.screenshot({ path: `${SHOTS}/rp-08-cancelar-con-devolucion.png`, fullPage: true });
+});
+
+test('AC-RP.9 · the list of reservations offers "Reprogramar" on the reservation of an affected departure and opens the screen', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  const toggle = page.getByRole('button', { name: /Ver todas las reservas|Ver reservas activas/ }).first();
+  await toggle.waitFor();
+  if (/todas/.test(await toggle.innerText())) await toggle.click();
+  await area(page).locator('tbody tr', { hasText: '#RES-1828' }).first().getByRole('button', { name: 'Reprogramar' }).click();
+  await expect(page.locator('app-rescheduling-page [data-state]').first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/rp-09-reprogramar-desde-la-lista.png`, fullPage: true });
 });
