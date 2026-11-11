@@ -216,9 +216,11 @@ export class PortalPageComponent {
       open: (answer, id) => {
         real.open(answer, id);
         const back = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
-        if (real.access) return;
+        // HU-COM-020: the restricted Administrator of an inactive tenant also goes back to the area it asked for; any other restricted or temporary credential stays.
+        const restrictedAdministrator = real.access === 'restricted' && real.roles.includes('TENANT_ADMINISTRATOR');
+        if (real.access && !restrictedAdministrator) return;
         if (back) void this.router.navigateByUrl(back);
-        else if (onSignIn && identifier !== undefined && scope === undefined && isOperator(real.roles)) void this.router.navigateByUrl(`/t/${identifier}/areas/${IDENTITY_PORTAL_KEY}`);
+        else if (!real.access && onSignIn && identifier !== undefined && scope === undefined && isOperator(real.roles)) void this.router.navigateByUrl(`/t/${identifier}/areas/${IDENTITY_PORTAL_KEY}`);
       },
       close: () => real.close(),
     };
