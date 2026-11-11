@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { areaText, fillHolder, openCommercialAs, openTourDetail } from './support/operator-session';
+import { areaText, fillHolder, goTo, openCommercialAs, openTourDetail } from './support/operator-session';
 
 // HU-COM-005 (register the lead customer and companions), portal spec 005-, AC-PC.x. One criterion per test.
 // The operator form already draws "Buscar cliente existente" (the customer search route, api 225 and portal 233); its check is
@@ -61,4 +61,31 @@ test('AC-PC.4 · a future birth date of the holder is refused', async ({ page })
   await press(page, /Confirmar reserva|Crear reserva/);
   expect(await areaText(page)).toContain('La fecha de nacimiento del titular no puede ser futura.');
   await page.screenshot({ path: `${SHOTS}/pc-04-fecha-futura.png`, fullPage: true });
+});
+
+test('AC-PC.2 and AC-PC.3 · the reservation form of the operator asks for the companions the quantity of travellers needs', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  await page.getByRole('button', { name: 'Crear reserva' }).first().click();
+  await page.locator('[name=serviceId]').selectOption({ index: 1 });
+  await page.locator('[name=departureId]').selectOption({ index: 1 });
+  await page.locator('[name=people]').fill('3');
+  await expect(area(page)).toContainText('2 acompañantes requeridos');
+  await expect(area(page).getByText('Acompañante 1')).toBeVisible();
+  await expect(area(page).getByText('Acompañante 2')).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/pc-02-acompanantes.png`, fullPage: true });
+});
+
+test('AC-PC.5 · a document repeated inside the same reservation is refused', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Reservas');
+  await page.getByRole('button', { name: 'Crear reserva' }).first().click();
+  await page.locator('[name=serviceId]').selectOption({ index: 1 });
+  await page.locator('[name=departureId]').selectOption({ index: 1 });
+  await page.locator('[name=people]').fill('2');
+  await page.getByLabel('Documento de identidad').nth(0).fill('1012345678');
+  await page.getByLabel('Documento de identidad').nth(1).fill('1012345678');
+  await page.getByLabel('Documento de identidad').nth(1).blur();
+  await expect(area(page)).toContainText(/repet|duplic/i);
+  await page.screenshot({ path: `${SHOTS}/pc-05-documento-repetido.png`, fullPage: true });
 });
