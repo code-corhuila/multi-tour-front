@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, NavigationStart, provideRouter, Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createContainerClient } from '../core/client/container';
+import { CONTAINER_CLIENT } from '../core/client/container-client.token';
 import { TenantShellComponent } from './tenant-shell.component';
 import { TenantLookup } from './tenant.resolver';
 
@@ -100,5 +102,42 @@ describe('TenantShellComponent', () => {
   it('U-an_inactive_or_unknown_tenant_paints_nothing', () => {
     const el = render({ state: 'inactive', profile: profile('INACTIVE', COLORS) });
     expect(el.style.getPropertyValue('--accent')).toBe('');
+  });
+
+  // HU-COM-020, comment of Jhon on #186: after signing in, the Administrator of an inactive tenant (restricted access) reaches the areas of its pending obligations; any other visitor still sees only the sign-in.
+  it('U·inactive_tenant_renders_the_outlet_for_an_area_when_the_session_is_the_restricted_administrator', () => {
+    const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
+    const token = `h.${btoa(JSON.stringify({ access: 'restricted', roles: ['TENANT_ADMINISTRATOR'] }))}.s`;
+    client.store.of('acme').open({ accessToken: token, expiresIn: 900 });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: Router, useValue: { url: '/t/acme/areas/commercial-reservation-portal', events: routerEvents } },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { tenant: { state: 'inactive', profile: profile('INACTIVE') } } } } },
+        { provide: CONTAINER_CLIENT, useValue: client },
+      ],
+    });
+    const fixture = TestBed.createComponent(TenantShellComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('router-outlet')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Acme Tours is not active');
+    client.store.of('acme').close();
+  });
+
+  it('U·inactive_tenant_keeps_the_outlet_closed_for_an_area_when_the_session_is_not_the_restricted_administrator', () => {
+    const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
+    client.store.of('acme').open({ accessToken: `h.${btoa(JSON.stringify({ roles: ['TENANT_ADMINISTRATOR'] }))}.s`, expiresIn: 900 });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: Router, useValue: { url: '/t/acme/areas/x', events: routerEvents } },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { tenant: { state: 'inactive', profile: profile('INACTIVE') } } } } },
+        { provide: CONTAINER_CLIENT, useValue: client },
+      ],
+    });
+    const fixture = TestBed.createComponent(TenantShellComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('router-outlet')).toBeNull();
+    client.store.of('acme').close();
   });
 });

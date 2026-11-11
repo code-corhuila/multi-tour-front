@@ -93,4 +93,10 @@ describe('operator navigation list', () => {
     expect(chromeFor(MANIFEST['commercial-reservation-portal'], ['FINAL_CUSTOMER'])).toBe(false);
     expect(chromeFor(undefined, ['TENANT_ADMINISTRATOR'])).toBe(false);
   });
+
+  // HU-COM-020: the restricted session of an inactive tenant sees only the regularization work (reservations and payments, where the proofs and the refunds are); the backend refuses the rest anyway.
+  it('U·a_restricted_session_sees_only_reservations_and_payments', () => {
+    expect(operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR'], true).map((i) => i.label)).toEqual(['Reservas', 'Pagos']);
+    expect(operatorNav(MANIFEST, ['TENANT_ADMINISTRATOR'], false)).toHaveLength(12);
+  });
 });
