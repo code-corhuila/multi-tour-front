@@ -12,13 +12,17 @@ function deferred<T>() {
 }
 
 describe('session', () => {
-  it('U·access_claim_is_exposed_and_unknown_values_fail_closed', () => {
+  it('U·only_exact_restricted_and_password_change_claims_are_exposed', () => {
     const store = new SessionStore(vi.fn());
     const session = store.of('acme');
     const cases: [Record<string, unknown>, unknown][] = [
       [{ access: 'password-change' }, 'password-change'],
       [{ access: 'restricted' }, 'restricted'],
-      [{ access: 'something-new' }, 'restricted'],
+      [{ access: 'exceptional' }, undefined],
+      [{ access: 'emergency' }, undefined],
+      [{ access: 'something-new' }, undefined],
+      [{ access: 'Restricted' }, undefined],
+      [{ access: 7 }, undefined],
       [{}, undefined],
     ];
     for (const [claims, expected] of cases) {
