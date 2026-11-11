@@ -4,6 +4,11 @@ import { OPERATOR_NAV_COPY as COPY } from './operator-nav-copy';
 /** The roles that get the operator sidebar, in the order their title is chosen. The backend still decides every request. */
 export const OPERATOR_ROLES = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST'] as const;
 const ADMIN_ONLY = ['TENANT_ADMINISTRATOR'];
+// The optional read-only roles drop what is not theirs, as in the sidebar of each role of the landing page (indice.html).
+const NO_ACCOUNTANT = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ANALYST'];
+const NO_ANALYST = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT'];
+const NO_COLLABORATOR = ['TENANT_ADMINISTRATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST'];
+const ADMIN_AND_COLLABORATOR = ['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR'];
 
 export interface OperatorNavEntry {
   readonly label: string;
@@ -32,14 +37,16 @@ export const PENDING_ROUTE = 'pendiente';
 export const OPERATOR_NAV: readonly OperatorNavEntry[] = [
   { label: COPY.entries.summary, portal: IDENTITY, roles: OPERATOR_ROLES },
   { label: COPY.entries.reservations, portal: COMMERCIAL, area: 'reservations', roles: OPERATOR_ROLES },
-  { label: COPY.entries.departures, portal: OPERATIONS, pending: { slug: 'salidas' }, roles: OPERATOR_ROLES },
-  { label: COPY.entries.catalog, portal: COMMERCIAL, area: 'catalog', roles: OPERATOR_ROLES },
+  { label: COPY.entries.departures, portal: OPERATIONS, pending: { slug: 'salidas' }, roles: NO_ACCOUNTANT },
+  { label: COPY.entries.catalog, portal: COMMERCIAL, area: 'catalog', roles: NO_ACCOUNTANT },
   { label: COPY.entries.discounts, portal: COMMERCIAL, area: 'discounts', roles: ADMIN_ONLY },
   { label: COPY.entries.payments, portal: COMMERCIAL, area: 'payments', roles: OPERATOR_ROLES },
-  { label: COPY.entries.cash, portal: CASH, area: 'cash', roles: OPERATOR_ROLES },
+  { label: COPY.entries.cash, portal: CASH, area: 'cash', roles: NO_ANALYST },
   { label: COPY.entries.operation, portal: OPERATIONS, pending: { slug: 'operacion' }, roles: OPERATOR_ROLES },
-  { label: COPY.entries.notifications, portal: COMMERCIAL, area: 'notifications', roles: OPERATOR_ROLES },
+  { label: COPY.entries.notifications, portal: COMMERCIAL, area: 'notifications', roles: ADMIN_AND_COLLABORATOR },
   { label: COPY.entries.reports, portal: CASH, area: 'reports', roles: OPERATOR_ROLES },
+  // The audit screen belongs to the identity portal, which does not read the area yet: the entry stays on the blank screen, like Colaboradores.
+  { label: COPY.entries.audit, portal: IDENTITY, pending: { slug: 'auditoria', fixed: true }, roles: NO_COLLABORATOR },
   { label: COPY.entries.collaborators, portal: IDENTITY, pending: { slug: 'colaboradores', fixed: true }, roles: ADMIN_ONLY },
 ];
 

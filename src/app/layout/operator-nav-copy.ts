@@ -15,6 +15,7 @@ export const OPERATOR_NAV_COPY = {
     operation: 'Operación',
     notifications: 'Notificaciones',
     reports: 'Reportes',
+    audit: 'Auditoría',
     collaborators: 'Colaboradores',
   },
   /** The title under the brand, by the first role of the session found here. */
