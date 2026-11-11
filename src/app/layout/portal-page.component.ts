@@ -117,7 +117,7 @@ export class PortalPageComponent {
       remote,
       url,
       props: { ...props, chrome: 'container', onAreaChange: (reported: string) => this.reported.set({ key, area: reported }), ...(initialParams && { initialParams }) },
-      sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
+      sidebar: { identifier: identifier as string, items: operatorNav(manifest, roles, props.session.access === 'restricted'), roleLabel: roleLabel(roles), active: { portal: remote, ...(area && { area }) } },
     };
   });
 
