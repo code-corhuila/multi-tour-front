@@ -2,8 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import { areaText, goTo, openCommercialAs } from './support/operator-session';
 
 // HU-COM-011 (manage the reservations pending payment), portal spec 011-, AC-PP.x. One criterion per test.
-// Not covered yet: the follow-up of the Collaborator (AC-PP.2): the Collaborator does not reach the follow-up screen from Pagos in this
-// build (read in the next window), and the role limit of the extension.
+// The Collaborator is not offered the extension limit in the demo (the role limit of the extension is read from the API: real service).
 // Not covered here: AC-PP.6 and AC-PP.12 (effective deadline and frozen deadline: unit tests), the automatic expiry of the
 // reservation (a job of the real service: the demo clock only marks) and the notice to the customer (mail, other team).
 const SHOTS = 'test-results/hu-com-011';
@@ -86,3 +85,14 @@ for (const [role, label] of [['ANALYST', 'Analista'], ['MANAGER', 'Gerente']] as
     await page.screenshot({ path: `${SHOTS}/pp-02-${role.toLowerCase()}.png`, fullPage: true });
   });
 }
+
+test('AC-PP.2 · the Collaborator reaches the follow-up from Pagos and registers a contact note', async ({ page }) => {
+  await openCommercialAs(page, ['OPERATIONAL_COLLABORATOR']);
+  await goTo(page, 'Pagos', 'Pagos pendientes');
+  await area(page).getByRole('button', { name: 'Registrar seguimiento' }).first().click();
+  await expect(area(page)).toContainText('Contexto del pago');
+  await page.getByPlaceholder('Describe el contacto realizado con el cliente y el resultado').fill('Contacto del colaborador');
+  await page.getByRole('button', { name: 'Registrar seguimiento' }).last().click();
+  await expect(area(page)).toContainText('Seguimiento registrado correctamente.');
+  await page.screenshot({ path: `${SHOTS}/pp-02-colaborador.png`, fullPage: true });
+});

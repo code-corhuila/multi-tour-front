@@ -3,8 +3,6 @@ import { areaText, goTo, openCommercialAs } from './support/operator-session';
 
 // HU-COM-017 (record and apply a credit balance), portal spec 017-, AC-CB.x. One criterion per test. Seeded: RES-1821 (cancelled for
 // non-payment, $1.200.000 validated, its treatment decision still open), and the credit balances of three customers on "Saldo a favor".
-// Not covered yet: AC-CB.4 and AC-CB.5 (apply part of the balance and the amount above the available one): written, the controls are reached
-// but the confirmation texts are still to be read from the screen in the next window.
 // Not covered here: the atomic application with the held seat and the cash movement of a refund (real service, cash-reporting: other
 // team), the 24-hour default refund (a job: the demo clock only marks) and AC-CB.x on notifications.
 const SHOTS = 'test-results/hu-com-017';
@@ -65,4 +63,29 @@ test('AC-CB.6 · an Analyst has no application controls on Saldo a favor', async
   await goTo(page, 'Pagos');
   await expect(page.getByRole('button', { name: 'Aplicar como pago validado' })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/cb-06-analista.png`, fullPage: true });
+});
+
+test('AC-CB.4 · the Administrator applies part of the balance to a reservation of the same customer as a validated payment', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Pagos', 'Pagos pendientes');
+  await page.getByText('Saldo a favor', { exact: true }).first().click();
+  await expect(area(page)).toContainText('Aplicar a la reserva');
+  // The second customer (Laura Gómez): her first target is the reservation of 5 dec; the targets of departures already started are refused.
+  await page.getByLabel('Aplicar a la reserva').nth(1).selectOption({ index: 0 });
+  await page.getByLabel('Monto').nth(1).fill('100000');
+  await page.getByRole('button', { name: 'Aplicar como pago validado' }).nth(1).click();
+  await expect(area(page)).toContainText(/Saldo a favor aplicado: \$100\.000 como pago validado de/);
+  await page.screenshot({ path: `${SHOTS}/cb-04-aplicado.png`, fullPage: true });
+});
+
+test('AC-CB.5 · an amount above the available balance is refused beside the field', async ({ page }) => {
+  await openCommercialAs(page, ['TENANT_ADMINISTRATOR']);
+  await goTo(page, 'Pagos', 'Pagos pendientes');
+  await page.getByText('Saldo a favor', { exact: true }).first().click();
+  await expect(area(page)).toContainText('Aplicar a la reserva');
+  await page.getByLabel('Aplicar a la reserva').nth(1).selectOption({ index: 0 });
+  await page.getByLabel('Monto').nth(1).fill('999999');
+  await page.getByRole('button', { name: 'Aplicar como pago validado' }).nth(1).click();
+  await expect(area(page)).toContainText(/supera el saldo a favor disponible/);
+  await page.screenshot({ path: `${SHOTS}/cb-05-monto-superior.png`, fullPage: true });
 });
