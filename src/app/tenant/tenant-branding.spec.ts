@@ -58,6 +58,22 @@ describe('TenantBranding (front spec 005, RN-FRT-50, -54)', () => {
     expect(branding.current().logoUrl).not.toBe(first);
   });
 
+  it('a newer refresh wins over an older answer that arrives late, and a start cancels a refresh in flight', async () => {
+    const branding = make();
+    let answerFirst: (value: unknown) => void = () => undefined;
+    const first = branding.refresh(clientOf(vi.fn(() => new Promise((resolve) => { answerFirst = resolve; }))), 'acme');
+    await branding.refresh(clientOf(vi.fn(async () => profile({ logoUrl: `${base}/logo?v=22222222` }))), 'acme');
+    answerFirst(profile({ logoUrl: `${base}/logo?v=11111111` }));
+    await first;
+    expect(branding.current().logoUrl).toBe(`${base}/logo?v=22222222`);
+    let answerSlow: (value: unknown) => void = () => undefined;
+    const slow = branding.refresh(clientOf(vi.fn(() => new Promise((resolve) => { answerSlow = resolve; }))), 'acme');
+    branding.start({ identifier: 'acme' }, 'acme');
+    answerSlow(profile());
+    await slow;
+    expect(branding.current()).toEqual({ logoUrl: null, images: [] });
+  });
+
   it('a refresh that answers files of another tenant shows none of them', async () => {
     const branding = make();
     const other = '/api/v1/identity-audit/public/tenants/other';
