@@ -49,6 +49,15 @@ describe('TenantBranding (front spec 005, RN-FRT-50, -54)', () => {
     }
   });
 
+  it('a refresh with a new version shows the new address and the old one is forgotten', async () => {
+    const branding = make();
+    branding.start(profile(), 'acme');
+    const first = branding.current().logoUrl;
+    await branding.refresh(clientOf(vi.fn(async () => profile({ logoUrl: `${base}/logo?v=22222222` }))), 'acme');
+    expect(branding.current().logoUrl).toBe(`${base}/logo?v=22222222`);
+    expect(branding.current().logoUrl).not.toBe(first);
+  });
+
   it('a refresh that answers files of another tenant shows none of them', async () => {
     const branding = make();
     const other = '/api/v1/identity-audit/public/tenants/other';
