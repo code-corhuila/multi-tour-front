@@ -88,6 +88,12 @@ export interface MountProps {
   onAreaChange?: (area: string) => void;
   /** The portal calls it with the colors the service returned after a save; the container applies them live. */
   onVisualIdentityChange?: (colors: { primaryColor: string; secondaryColor: string }) => void;
+  /** The company's logo as a public path, or null; only tenant mounts get it (front spec 005). */
+  logoUrl?: string | null;
+  /** The company's commercial images, by position, as public paths; only tenant mounts get it. */
+  images?: { position: number; url: string }[];
+  /** The portal calls it after it saved or removed a logo or an image; the container reads the public profile again and shows the files with no reload. */
+  onTenantImagesChange?: () => void;
 }
 
 /** One field-level problem of the envelope's `details`, e.g. `{field: 'email', message: 'already in use'}`. */

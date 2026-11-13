@@ -8,6 +8,7 @@ import { RemoteUnavailableComponent } from '../core/errors/remote-unavailable.co
 import { RemoteHostComponent } from '../core/federation/remote-host.component';
 import { entryRoles, entryUrl, ManifestEntry, MANIFEST_LOADER } from '../core/federation/remote-loader';
 import { TenantLookup } from '../tenant/tenant.resolver';
+import { TenantBranding } from '../tenant/tenant-branding';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { initialParamsOf, navigationParams } from './initial-params';
 import { NotFoundComponent } from './not-found.component';
@@ -84,6 +85,8 @@ export class PortalPageComponent {
   private readonly loadManifest = inject(MANIFEST_LOADER);
   /** Provided by the tenant shell only: the platform and the general login have no tenant colors. */
   private readonly identity = inject(TenantVisualIdentity, { optional: true });
+  /** Provided by the tenant shell only, like the colors: the platform and the general login have no logo or images. */
+  private readonly branding = inject(TenantBranding, { optional: true });
   private readonly params = toSignal(this.route.paramMap, { requireSync: true });
   private readonly query = toSignal(this.route.queryParamMap, { requireSync: true });
   private readonly manifest = signal<Record<string, ManifestEntry> | 'loading' | 'failed'>('loading');
@@ -231,6 +234,7 @@ export class PortalPageComponent {
       } else this.openTarget(target, identifier, scope, real);
     };
     const colors = this.identity && scope === undefined && identifier !== undefined ? this.identity : null;
+    const files = this.branding && scope === undefined && identifier !== undefined ? this.branding : null;
     const name = scope === undefined && identifier !== undefined ? this.commercialName() : undefined;
     return {
       ...props,
@@ -240,6 +244,12 @@ export class PortalPageComponent {
       ...(colors && {
         visualIdentity: untracked(() => colors.current()),
         onVisualIdentityChange: (value) => colors.change(value),
+      }),
+      ...(files && {
+        logoUrl: untracked(() => files.current().logoUrl),
+        images: untracked(() => files.current().images),
+        // the portal saved a file: the public profile is read again and the band shows it; it is public, so no credential is sent
+        onTenantImagesChange: () => void files.refresh(this.client.anonymousPropsFor(identifier as string).apiClient, identifier as string),
       }),
     };
   }

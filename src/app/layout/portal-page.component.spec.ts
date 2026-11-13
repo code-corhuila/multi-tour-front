@@ -6,6 +6,7 @@ import { createContainerClient } from '../core/client/container';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
 import { answer, jwt } from '../core/client/test-helpers';
 import { MANIFEST_LOADER, REMOTE_IMPORTER } from '../core/federation/remote-loader';
+import { TenantBranding } from '../tenant/tenant-branding';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { PortalPageComponent } from './portal-page.component';
 
@@ -19,9 +20,11 @@ interface Options {
   profileColors?: unknown;
   /** The commercial name of the resolved tenant profile (route data, as the tenant shell's resolver sets it). */
   commercialName?: unknown;
+  /** Provide the branding state the tenant shell would provide, started from this profile value. */
+  profileBranding?: unknown;
 }
 
-function setup({ params = {}, remote, scope, returnUrl, profileColors, commercialName, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
+function setup({ params = {}, remote, scope, returnUrl, profileColors, profileBranding, commercialName, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
   const mount = vi.fn();
   const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
   const route = {
@@ -41,16 +44,25 @@ function setup({ params = {}, remote, scope, returnUrl, profileColors, commercia
       provideRouter([]),
       { provide: ActivatedRoute, useValue: route },
       ...(profileColors === undefined ? [] : [TenantVisualIdentity]),
+      ...(profileBranding === undefined ? [] : [TenantBranding]),
       { provide: CONTAINER_CLIENT, useValue: client },
       { provide: MANIFEST_LOADER, useValue: () => (manifest instanceof Error ? Promise.reject(manifest) : Promise.resolve(manifest)) },
       { provide: REMOTE_IMPORTER, useValue: vi.fn().mockResolvedValue({ mount }) },
     ],
   });
   if (profileColors !== undefined) TestBed.inject(TenantVisualIdentity).start(profileColors);
+  if (profileBranding !== undefined) TestBed.inject(TenantBranding).start(profileBranding, 'acme');
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(PortalPageComponent);
   fixture.detectChanges();
-  return { fixture, mount, navigate, client, identity: profileColors === undefined ? null : TestBed.inject(TenantVisualIdentity) };
+  return {
+    fixture,
+    mount,
+    navigate,
+    client,
+    identity: profileColors === undefined ? null : TestBed.inject(TenantVisualIdentity),
+    branding: profileBranding === undefined ? null : TestBed.inject(TenantBranding),
+  };
 }
 
 const until = (fixture: { detectChanges(): void }, check: () => void) =>
@@ -264,6 +276,41 @@ describe('PortalPageComponent', () => {
     await until(platform.fixture, () => expect(platform.mount).toHaveBeenCalledTimes(1));
     expect('visualIdentity' in platform.mount.mock.calls[0][1]).toBe(false);
     expect('onVisualIdentityChange' in platform.mount.mock.calls[0][1]).toBe(false);
+  });
+
+  it('U·the_portal_receives_the_saved_files: the logo, the images and the callback of the company', async () => {
+    const files = '/api/v1/identity-audit/public/tenants/acme';
+    const profileBranding = { logoUrl: `${files}/logo?v=abcd1234`, images: [{ position: 1, url: `${files}/images/1?v=abcd1234` }] };
+    const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileBranding });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const props = mount.mock.calls[0][1];
+    expect(props.logoUrl).toBe(`${files}/logo?v=abcd1234`);
+    expect(props.images).toEqual(profileBranding.images);
+    expect(typeof props.onTenantImagesChange).toBe('function');
+  });
+
+  it('U·the_callback_reads_the_profile_again: it asks the service of the company with the client of the portal', async () => {
+    const { fixture, mount, branding } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileBranding: {} });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const refresh = vi.spyOn(branding!, 'refresh').mockResolvedValue();
+    const props = mount.mock.calls[0][1];
+    props.onTenantImagesChange();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    // the public profile needs no credential: the refresh uses the client of an anonymous mount, so an expired token cannot end the session
+    expect(typeof refresh.mock.calls[0][0].request).toBe('function');
+    expect(refresh.mock.calls[0][1]).toBe('acme');
+  });
+
+  it('U·the_platform_scope_gets_no_files: the platform and the general login get none of the three props', async () => {
+    const platform = setup({ remote: 'identity-audit-portal', profileBranding: {} });
+    await until(platform.fixture, () => expect(platform.mount).toHaveBeenCalledTimes(1));
+    for (const key of ['logoUrl', 'images', 'onTenantImagesChange']) expect(key in platform.mount.mock.calls[0][1], key).toBe(false);
+  });
+
+  it('U·a_portal_without_the_new_props_still_mounts: a tenant mount with no provider gets none', async () => {
+    const bare = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(bare.fixture, () => expect(bare.mount).toHaveBeenCalledTimes(1));
+    for (const key of ['logoUrl', 'images', 'onTenantImagesChange']) expect(key in bare.mount.mock.calls[0][1], key).toBe(false);
   });
 
   it('U-a_tenant_without_colors_gets_null', async () => {
