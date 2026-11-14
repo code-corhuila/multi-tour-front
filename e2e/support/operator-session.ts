@@ -97,6 +97,8 @@ export async function goTo(page: Page, label: string, heading: string = label): 
 /** The labels of the sidebar items the shell draws for the signed-in role, in order. */
 export const sidebarItems = async (page: Page): Promise<string[]> => {
   const nav = page.locator('nav').first();
+  // The nav can be in the DOM before its buttons are drawn; reading then falls to the plain-text branch and returns one glued label.
+  await nav.getByRole('button').first().waitFor({ timeout: 5000 }).catch(() => undefined);
   const buttons = (await nav.getByRole('button').allInnerTexts()).map((s) => s.trim()).filter(Boolean);
   return buttons.length > 0 ? buttons : (await nav.innerText()).split('\n').map((s) => s.trim()).filter(Boolean);
 };
