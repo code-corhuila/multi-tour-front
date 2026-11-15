@@ -8,7 +8,8 @@ import { IDENTITY, requireModule, sessionOf, sessionsRoute, signIn, stubJson } f
 // Not covered here: the container painting the colors of the public profile on the landing and keeping the platform look without them
 // (AC1 and AC4 at the container) is e2e/visual-identity.e2e.ts, with a stub portal; that the service stores the colors only for the
 // tenant of the token and refuses another tenant or an undeclared field (AC2, AC3) is identity-audit-api
-// (VisualIdentityRouteTest: C_visual_identity_changes_only_the_tokens_tenant, C_visual_identity_with_a_tenant_id_in_the_body_is_400,
+// (VisualIdentityRouteTest: C_visual_identity_is_set_for_the_tenant_of_the_token_and_answers_the_tenant_in_capitals for AC1,
+// C_visual_identity_changes_only_the_tokens_tenant, C_visual_identity_with_a_tenant_id_in_the_body_is_400,
 // C_visual_identity_with_an_undeclared_field_is_400).
 const SHOTS = 'test-results/hu-ida-003';
 const ROUTE = '**/api/v1/identity-audit/tenant/visual-identity';
