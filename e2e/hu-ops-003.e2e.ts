@@ -83,7 +83,6 @@ test('AC2 · in a regularization, a start earlier than the scheduled one is acce
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 for (const [who, roles] of [
   ['the Administrator', ['TENANT_ADMINISTRATOR']],
   ['a collaborator with the permission', ['OPERATIONAL_COLLABORATOR']],
@@ -182,7 +181,6 @@ test('AC7 · a collaborator without the permission Gestionar ejecución de salid
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC7 · a collaborator who holds the permission records the start, and is not offered to schedule', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [due()] });
   await expect(area(page).getByRole('button', { name: 'Programar salida' })).toHaveCount(0);
