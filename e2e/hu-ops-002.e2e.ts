@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { answer, area, BUS, COFFEE, departureOf, nextRequest, openDeparture, openDepartures, OPS, pageOf, refusal, RIVER, VAN, wallIn } from './support/operations-departures';
+import { answer, area, BUS, COFFEE, departureOf, expectNoUnstubbedCalls, NEW_VEHICLE_ID, nextRequest, openDeparture, openDepartures, OPS, pageOf, refusal, RIVER, SAGA, VAN, wallIn } from './support/operations-departures';
 
 // HU-OPS-002 (assign and change the vehicles of a departure), code-corhuila/multi-tour-docs#188; spec 006 of multi-tour-front
 // (HU-FRT-001, #202). The real module of operations-cost-portal, the API and the saga answered by page.route. One criterion per test.
@@ -17,7 +17,7 @@ test('AC1 · the Administrator registers a vehicle with its capacity and it is l
   const vehicles = panel(page, 'Vehículos');
   await expect(vehicles).toContainText(`${VAN.name} · 12 viajeros`);
   // The service lists the new vehicle from then on, as it would.
-  const registered = { vehicleId: 'veh-new', name: 'Buseta BUS-410', capacity: 20 };
+  const registered = { vehicleId: NEW_VEHICLE_ID, name: 'Buseta BUS-410', capacity: 20 };
   const fleet = [VAN];
   await page.route(
     (url) => url.pathname === `${OPS}/vehicles`,
@@ -41,6 +41,7 @@ test('AC1 · the Administrator registers a vehicle with its capacity and it is l
   await page.getByLabel('Tour', { exact: true }).selectOption({ label: RIVER.commercialName });
   await expect(area(page).getByRole('checkbox', { name: /Buseta BUS-410 · 20 viajeros/ })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/ac1-vehiculo.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC1 · a capacity out of range and a name already used are told beside their field', async ({ page }) => {
@@ -58,6 +59,7 @@ test('AC1 · a capacity out of range and a name already used are told beside the
   await expect(page.getByLabel('Nombre del vehículo')).toHaveAccessibleDescription('Ya existe un vehículo con ese nombre.');
   await expect(page.getByLabel('Nombre del vehículo')).toHaveValue(VAN.name);
   await page.screenshot({ path: `${SHOTS}/ac1-errores.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC2 · while scheduling, the vehicles chosen add up and the effective capacity is the lower of the tour and their total', async ({ page }) => {
@@ -79,6 +81,7 @@ test('AC2 · while scheduling, the vehicles chosen add up and the effective capa
   await expect(area(page).getByText(/^Salida SAL-206 programada/)).toBeVisible();
   await expect(area(page).getByText(/^Salida SAL-206 programada/)).toContainText('Capacidad efectiva: 18.');
   await page.screenshot({ path: `${SHOTS}/ac2-capacidad.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC2 · on a scheduled departure, "Agregar vehículos" adds one and the page shows the effective capacity the service answers', async ({ page }) => {
@@ -100,6 +103,7 @@ test('AC2 · on a scheduled departure, "Agregar vehículos" adds one and the pag
   await expect(area(page)).toContainText('18 cupos · 3 reservados');
   await expect(area(page)).toContainText(`${VAN.name}, ${BUS.name}`);
   await page.screenshot({ path: `${SHOTS}/ac2-agregar.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC3 · a vehicle already on a departure whose interval overlaps is marked and refused; with touching ends it is allowed', async ({ page }) => {
@@ -128,6 +132,7 @@ test('AC3 · a vehicle already on a departure whose interval overlaps is marked 
   await page.getByRole('button', { name: 'Guardar salida' }).click();
   expect((await sent).postDataJSON().vehicleIds).toEqual([VAN.vehicleId]);
   await expect(area(page).getByText(/^Salida SAL-207 programada/)).toBeVisible();
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC4 · "Cambiar vehículos" previews the new capacity, asks for at least one vehicle and tells a refusal of the saga: nothing changes', async ({ page }) => {
@@ -141,7 +146,7 @@ test('AC4 · "Cambiar vehículos" previews the new capacity, asks for at least o
   await expect(change.getByRole('group', { name: 'Vehículos de la salida' })).toHaveAccessibleDescription('Elige al menos un vehículo.');
   await change.getByRole('checkbox', { name: /Bus BUS-301/ }).check();
   await expect(change).toContainText('Capacidad con el nuevo conjunto: 18');
-  await answer(page, 'POST', VEHICLE_SAGA, 201, { id: 'saga-veh-1', status: 'COMPENSATED', reason: 'SEATS_HELD' });
+  await answer(page, 'POST', VEHICLE_SAGA, 201, { id: SAGA, status: 'COMPENSATED', reason: 'SEATS_HELD' });
   const sent = nextRequest(page, 'POST', VEHICLE_SAGA);
   await change.getByRole('button', { name: 'Confirmar cambio' }).click();
   const request = await sent;
@@ -151,6 +156,7 @@ test('AC4 · "Cambiar vehículos" previews the new capacity, asks for at least o
   await expect(change.getByRole('status')).toHaveText('Hay más cupos reservados que la nueva capacidad. No se cambió nada.');
   await expect(area(page)).toContainText('12 cupos · 10 reservados');
   await page.screenshot({ path: `${SHOTS}/ac4-rechazo.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC4 · a change the saga completes shows the departure as it is now, with its new vehicles and capacity', async ({ page }) => {
@@ -160,13 +166,14 @@ test('AC4 · a change the saga completes shows the departure as it is now, with 
   const change = panel(page, 'Cambiar vehículos');
   await change.getByRole('checkbox', { name: /Van VAN-201/ }).uncheck();
   await change.getByRole('checkbox', { name: /Bus BUS-301/ }).check();
-  await answer(page, 'POST', VEHICLE_SAGA, 201, { id: 'saga-veh-2', status: 'COMPLETED' });
+  await answer(page, 'POST', VEHICLE_SAGA, 201, { id: SAGA, status: 'COMPLETED' });
   // The departure is read again after the saga answers.
   await answer(page, 'GET', `${OPS}/departures/SAL-101`, 200, { ...departure, capacity: 18, vehicles: [{ vehicleId: BUS.vehicleId, name: BUS.name }] });
   await change.getByRole('button', { name: 'Confirmar cambio' }).click();
   await expect(change.getByRole('status')).toHaveText('Vehículos cambiados. Capacidad efectiva: 18.');
   await expect(area(page)).toContainText('18 cupos · 3 reservados');
   await page.screenshot({ path: `${SHOTS}/ac4-cambiado.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC6 · a scheduled departure of a tour without mandatory transport offers neither adding nor changing vehicles', async ({ page }) => {
@@ -177,4 +184,5 @@ test('AC6 · a scheduled departure of a tour without mandatory transport offers 
   await expect(panel(page, 'Agregar vehículos')).toHaveCount(0);
   await expect(panel(page, 'Cambiar vehículos')).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/ac6-sin-transporte.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
