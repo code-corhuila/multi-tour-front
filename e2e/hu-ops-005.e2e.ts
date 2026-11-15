@@ -68,7 +68,6 @@ test('AC4 · a collaborator without the permission Gestionar ejecución de salid
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC4 · when the service denies the cancellation, the page says the permission is missing and keeps the justification', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [running()] });
   await openDeparture(page, 'SAL-101');
