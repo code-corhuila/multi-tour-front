@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { area, COFFEE, departureOf, instantOf, nextRequest, openDepartures, OPS, pageOf, rowOf, RIVER, wallIn, ZONE } from './support/operations-departures';
+import { area, COFFEE, departureOf, expectNoUnstubbedCalls, instantOf, nextRequest, openDepartures, OPS, pageOf, RIVER, rowOf, wallIn, ZONE } from './support/operations-departures';
 
 // HU-OPS-001 (schedule the departures of a tour), code-corhuila/multi-tour-docs#187; spec 006 of multi-tour-front (HU-FRT-001, #202).
 // The real module of operations-cost-portal in its Salidas area, the API answered by page.route. One criterion per test.
 // Not covered here: AC5 (reservable a few seconds later: the event SalidaScheduled, delivered by job 7 and turned into a reservable
 // departure by commercial-reservation; ScheduleDepartureRouteTest of multi-tour-operations-cost-api, multi-tour-worker-event-relay and
 // DepartureEventsHttpTest of multi-tour-commercial-reservation-api).
-// Not met by the module: AC3 and AC4 (changing the date or the time of a departure): the Salidas area offers "Editar" only over its
-// test data, never over a departure of the service, so neither the allowed change nor the refused one has a screen yet.
+// Not met by the module: AC3 and AC4 (changing the date or the time of a departure). The API does offer it (PUT /departures/{code}/schedule,
+// contract 0.17.0), but the portal has no screen to edit a real departure: the Salidas area offers "Editar" only over its test data.
 const SHOTS = 'test-results/hu-ops-001';
 
 test('AC1 · the Administrator schedules a departure of a catalog tour with date, start and estimated end, and it is listed as Programada', async ({ page }) => {
@@ -46,6 +46,7 @@ test('AC1 · the Administrator schedules a departure of a catalog tour with date
   await expect(row).toContainText('Programada');
   await expect(row).toContainText(`${day} 08:00`);
   await page.screenshot({ path: `${SHOTS}/ac1-programada.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC2 · a departure of a tour without mandatory transport takes the capacity of the tour and asks for no vehicle', async ({ page }) => {
@@ -59,6 +60,7 @@ test('AC2 · a departure of a tour without mandatory transport takes the capacit
   await expect(area(page)).toContainText(`Capacidad de la salida: ${COFFEE.configuredCapacity} viajeros (la del tour).`);
   await expect(area(page).getByRole('checkbox')).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/ac2-sin-transporte.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC6 · each state is shown as the service says it, and only Programada and En ejecución open the execution; the others open their record', async ({ page }) => {
@@ -77,4 +79,5 @@ test('AC6 · each state is shown as the service says it, and only Programada and
   await expect(area(page).getByRole('row')).toHaveCount(2);
   await expect(row('SAL-101')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/ac6-estados.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });

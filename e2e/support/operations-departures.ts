@@ -3,9 +3,19 @@ import { OPERATIONS, openAreaAs } from './lead-portals';
 
 /**
  * The departures of the operations-cost portal walked with its real module (spec 006 of multi-tour-front, plan D-01): every call the
- * module makes is answered here, shaped as contract operations-cost.yaml 0.16.0 and the workflow change-departure-vehicles say.
+ * module makes is answered here, shaped as contract operations-cost.yaml 0.17.0 and the workflows change-departure-vehicles and
+ * cancel-departure say. The stubs read the role like the real API does (RouteAuthorization): the routes of the Administrator only
+ * answer 403 FORBIDDEN to anyone else.
  */
 export const MANAGE = 'MANAGE_DEPARTURE_EXECUTION';
+/** The permissions an Administrator holds by profile (the claim `permissions` of its token). */
+export const ADMIN_PERMISSIONS = ['MANAGE_CASH', MANAGE, 'VALIDATE_PAYMENT_PROOFS'];
+// Ids as the services issue them: UUIDs.
+export const ACCOUNT = '3f0c5a52-8f6e-4d0b-9a57-1c2b7e0d4a11';
+export const RES_1 = '7b1e6c3a-2d84-4f5b-8c19-5a0e9d3f6b21';
+export const RES_2 = '9d4a2f7e-61c3-4b88-a5e0-3c7f1b8d2e32';
+export const SAGA = 'c2e8b4d6-0a17-4f39-b6d5-8e1a3c9f7a43';
+export const NEW_VEHICLE_ID = '5e9a1c7b-3f20-4d64-8b0e-2a6d4f8c1b54';
 export const ZONE = 'America/Bogota';
 export const OPS = '/api/v1/operations-cost';
 const HOUR = 3_600_000;
@@ -38,10 +48,10 @@ export interface Tour {
   configuredCapacity: number;
   transportRequired: boolean;
 }
-export const RIVER: Tour = { serviceId: 'srv-river', commercialName: 'Caminata al cañón del río', configuredCapacity: 18, transportRequired: true };
-export const COFFEE: Tour = { serviceId: 'srv-coffee', commercialName: 'Sendero del café', configuredCapacity: 8, transportRequired: false };
-export const VAN = { vehicleId: 'veh-van', name: 'Van VAN-201', capacity: 12 };
-export const BUS = { vehicleId: 'veh-bus', name: 'Bus BUS-301', capacity: 30 };
+export const RIVER: Tour = { serviceId: 'a1f4c8e2-5b73-4e09-9d16-0c8b2a7e3d65', commercialName: 'Caminata al cañón del río', configuredCapacity: 18, transportRequired: true };
+export const COFFEE: Tour = { serviceId: 'b6d2e9a3-7c41-4a58-8f03-1e5c9b4d7a76', commercialName: 'Sendero del café', configuredCapacity: 8, transportRequired: false };
+export const VAN = { vehicleId: 'd3a7b1f5-9e62-4c80-a4b7-6f2d0e8c5a87', name: 'Van VAN-201', capacity: 12 };
+export const BUS = { vehicleId: 'e8c4d2a6-1b95-4f73-9c28-7a3e5b0d1f98', name: 'Bus BUS-301', capacity: 30 };
 
 /** A departure as the service answers it (`GET /departures/{code}`); the list row is derived from it. */
 export function departureOf(o: Record<string, unknown> = {}) {
@@ -91,22 +101,56 @@ export interface Opening {
   vehicles?: (typeof VAN)[];
 }
 
+const unstubbed = new WeakMap<Page, string[]>();
+
+/** The calls to the API that no stub answered, as `METHOD path`; each was answered 404. */
+export const unstubbedCalls = (page: Page): string[] => unstubbed.get(page) ?? [];
+
+/** Fails when the module made a call no stub of the test answers: the answers of the test are the whole API the story sees. */
+export function expectNoUnstubbedCalls(page: Page): void {
+  expect(unstubbedCalls(page)).toEqual([]);
+}
+
+const FORBIDDEN = { error: 'FORBIDDEN', message: 'stubbed FORBIDDEN', traceId: 't-ops' };
+
 /**
  * Opens the Salidas area (`?area=departures`) of acme with a session of the given roles and permissions, the list, the catalog, the
- * vehicles and the zone of the tenant stubbed, and each departure readable by its code. Any other call to the API answers 404: the
- * unsigned token of the test never reaches the services of the shared environment (RN-FE-61).
+ * vehicles and the zone of the tenant stubbed, each departure readable by its code and its (empty) cost sheet.
+ * A call no stub answers is recorded (see expectNoUnstubbedCalls) and answered 404.
  */
 export async function openDepartures(page: Page, o: Opening = {}): Promise<void> {
-  const { roles = ['TENANT_ADMINISTRATOR'], permissions = [MANAGE], departures = [], tours = [RIVER, COFFEE], vehicles = [VAN, BUS] } = o;
+  const { roles = ['TENANT_ADMINISTRATOR'], permissions = roles.includes('TENANT_ADMINISTRATOR') ? ADMIN_PERMISSIONS : [MANAGE], departures = [], tours = [RIVER, COFFEE], vehicles = [VAN, BUS] } = o;
+  const log: string[] = [];
+  unstubbed.set(page, log);
   await page.route(
     (url) => url.pathname.startsWith('/api/v1/'),
-    (route) => route.fulfill({ status: 404, json: { error: 'NOT_FOUND', message: 'not stubbed', traceId: 't-ops' } }),
+    (route) => {
+      log.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
+      return route.fulfill({ status: 404, json: { error: 'NOT_FOUND', message: 'not stubbed', traceId: 't-ops' } });
+    },
   );
   await answer(page, 'GET', `${OPS}/departures`, 200, pageOf(departures.map(rowOf)));
   await answer(page, 'GET', '/api/v1/commercial-reservation/catalog/services', 200, pageOf(tours));
   await answer(page, 'GET', `${OPS}/vehicles`, 200, pageOf(vehicles));
   await answer(page, 'GET', '/api/v1/identity-audit/tenant/localization', 200, { timeZone: ZONE });
-  for (const d of departures) await answer(page, 'GET', `${OPS}/departures/${d.code}`, 200, d);
+  for (const d of departures) {
+    await answer(page, 'GET', `${OPS}/departures/${d.code}`, 200, d);
+    // A departure that starts or is regularized during the test shows its costs next: an empty sheet, unless the test answers its own.
+    await answer(page, 'GET', `${OPS}/departures/${d.code}/costs`, 200, { data: [], totalCents: 0, travelersServed: (d as { travelersServed?: number }).travelersServed ?? 0 });
+  }
+  if (!roles.includes('TENANT_ADMINISTRATOR')) {
+    // The routes of the Administrator only: the vehicles, scheduling, adding vehicles and the two sagas (registered last, so they answer first).
+    await page.route(
+      (url) => url.pathname.startsWith('/api/v1/'),
+      (route) => {
+        const { pathname } = new URL(route.request().url());
+        const post = route.request().method() === 'POST';
+        const adminOnly =
+          pathname === `${OPS}/vehicles` || pathname.startsWith('/api/v1/sagas/') || (post && (pathname === `${OPS}/departures` || /^\/api\/v1\/operations-cost\/departures\/[^/]+\/vehicles$/.test(pathname)));
+        return adminOnly ? route.fulfill({ status: 403, json: FORBIDDEN }) : route.fallback();
+      },
+    );
+  }
   await openAreaAs(page, OPERATIONS, roles, { claims: { permissions } });
   // A link inside the page (no reload: the session lives in memory) to the Salidas area.
   await page.evaluate((path) => {
