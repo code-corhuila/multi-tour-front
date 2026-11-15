@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { area, departureOf, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, wallIn } from './support/operations-departures';
+import { area, departureOf, expectNoUnstubbedCalls, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, wallIn } from './support/operations-departures';
 
 // HU-OPS-007 (record operational costs), code-corhuila/multi-tour-docs#193; spec 006 of multi-tour-front (HU-FRT-001, #202).
 // The real module of operations-cost-portal in the panel "Costos operacionales" of a departure, the API answered by page.route.
@@ -48,8 +48,10 @@ test('AC1 · the real cost of a departure that started is recorded apart from th
   await expect(costs.getByRole('row').filter({ hasText: 'Almuerzo del guía' })).toHaveText(/Almuerzo del guía\s*Gasto real\s*\$ 125\.000/);
   await expect(costs).toContainText('Total: $ 125.000');
   await page.screenshot({ path: `${SHOTS}/ac1-gasto-real.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
+// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC2 · with a parametrized cost, a collaborator calculates it with the real number of travelers served; only the concept is sent', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [running()] });
   await serveCosts(page, { baseCostCents: 2_000_000, travelersServed: 4 }, line({ concept: 'Entrada al parque', mode: 'CALCULATED', amountCents: 8_000_000, unitCostCents: 2_000_000, travelersServed: 4 }));
@@ -62,6 +64,7 @@ test('AC2 · with a parametrized cost, a collaborator calculates it with the rea
   expect((await sent).postDataJSON()).toEqual({ concept: 'Entrada al parque', mode: 'CALCULATED' });
   await expect(costs.getByRole('row').filter({ hasText: 'Entrada al parque' })).toHaveText(/Entrada al parque\s*Calculado\s*\$ 80\.000/);
   await page.screenshot({ path: `${SHOTS}/ac2-calculado.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC3 · without a parametrized cost there is no calculation, and a real expense needs its justification, which is sent', async ({ page }) => {
@@ -81,6 +84,7 @@ test('AC3 · without a parametrized cost there is no calculation, and a real exp
   expect((await sent).postDataJSON()).toEqual({ concept: 'Transporte extra', mode: 'MANUAL', amountCents: 30_000_000, justification: 'Factura 118 del transportador' });
   await expect(costs.getByRole('row').filter({ hasText: 'Transporte extra' })).toContainText('Factura 118 del transportador');
   await page.screenshot({ path: `${SHOTS}/ac3-sin-parametrizacion.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC4 · on a departure that has not started no cost is offered, and none is asked of the service', async ({ page }) => {
@@ -94,4 +98,5 @@ test('AC4 · on a departure that has not started no cost is offered, and none is
   await expect(costs.getByLabel('Valor')).toHaveCount(0);
   expect(asked).toBe(0);
   await page.screenshot({ path: `${SHOTS}/ac4-sin-iniciar.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
