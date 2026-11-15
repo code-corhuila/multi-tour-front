@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { answer, area, departureOf, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, refusal, wallIn } from './support/operations-departures';
+import { ACCOUNT, answer, area, departureOf, expectNoUnstubbedCalls, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, refusal, RES_1, wallIn } from './support/operations-departures';
 
 // HU-OPS-005 (block ordinary adjustments and record an extraordinary cancellation), code-corhuila/multi-tour-docs#191; spec 006 of
 // multi-tour-front (HU-FRT-001, #202). The real module of operations-cost-portal on the page of a departure, the API answered by page.route.
@@ -9,10 +9,10 @@ import { answer, area, departureOf, instantOf, MANAGE, nextRequest, openDepartur
 // reschedule or to refund after an extraordinary cancellation (AC3) is taken in commercial-reservation (HU-COM-015, HU-COM-016).
 const SHOTS = 'test-results/hu-ops-005';
 const panel = (page: Page, name: string) => area(page).getByRole('region', { name, exact: true });
-const ANA = { reservationId: 'RES-1', customer: 'Ana Ruiz', travelers: 2, state: 'IN_EXECUTION' };
+const ANA = { reservationId: RES_1, customer: 'Ana Ruiz', travelers: 2, state: 'IN_EXECUTION' };
 const running = (o: Record<string, unknown> = {}) =>
   departureOf({ start: wallIn(-2), end: wallIn(2), status: 'IN_EXECUTION', actualStart: instantOf(wallIn(-2)), reservations: [ANA], ...o });
-const CANCELLATION = `${OPS}/departures/SAL-101/reservations/RES-1/extraordinary-cancellation`;
+const CANCELLATION = `${OPS}/departures/SAL-101/reservations/${RES_1}/extraordinary-cancellation`;
 const WHY = 'Fractura del viajero en el sendero, atendido por la ambulancia';
 
 test('AC1 · once the departure is in execution, its transport is no longer offered to change and the page says no ordinary adjustment is allowed', async ({ page }) => {
@@ -28,6 +28,7 @@ test('AC1 · once the departure is in execution, its transport is no longer offe
   await expect(panel(page, 'Cancelar salida')).toHaveCount(0);
   await expect(panel(page, 'Lo reservado y lo efectivamente prestado')).toContainText('Una vez iniciada la salida no se permiten ajustes ordinarios.');
   await page.screenshot({ path: `${SHOTS}/ac1-en-ejecucion.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC3 · an extraordinary cancellation of a reservation in execution needs its justification and a confirmation, and leaves the decision pending', async ({ page }) => {
@@ -42,7 +43,7 @@ test('AC3 · an extraordinary cancellation of a reservation in execution needs i
   await expect(area(page)).toContainText('Vas a cancelar la reserva de Ana Ruiz. Esta acción no se puede deshacer.');
   const recordedAt = wallIn(0);
   await answer(page, 'POST', CANCELLATION, 200, running({
-    reservations: [{ ...ANA, state: 'CANCELLED', extraordinaryCancellation: { justification: WHY, recordedBy: 'admin@acme.test', recordedAt: instantOf(recordedAt) } }],
+    reservations: [{ ...ANA, state: 'CANCELLED', extraordinaryCancellation: { justification: WHY, recordedBy: ACCOUNT, recordedAt: instantOf(recordedAt) } }],
   }));
   const sent = nextRequest(page, 'POST', CANCELLATION);
   await page.getByRole('button', { name: 'Confirmar cancelación' }).click();
@@ -52,10 +53,11 @@ test('AC3 · an extraordinary cancellation of a reservation in execution needs i
   const reservations = panel(page, 'Lo reservado y lo efectivamente prestado');
   await expect(reservations).toContainText('Ana Ruiz · 2 viajeros Cancelada por emergencia (cancelación extraordinaria)');
   await expect(reservations.getByRole('group', { name: 'Cancelación extraordinaria de Ana Ruiz' })).toHaveText(
-    `Cancelación extraordinaria: ${WHY} · ${recordedAt.replace('T', ' ')} · cuenta admin@acme.testLa decisión de reprogramar o reembolsar queda pendiente.`,
+    `Cancelación extraordinaria: ${WHY} · ${recordedAt.replace('T', ' ')} · cuenta ${ACCOUNT}La decisión de reprogramar o reembolsar queda pendiente.`,
   );
   await expect(area(page).getByRole('button', { name: 'Cancelación extraordinaria' })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/ac3-cancelacion-extraordinaria.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC4 · a collaborator without the permission Gestionar ejecución de salidas cannot reach the departure to cancel', async ({ page }) => {
@@ -63,8 +65,10 @@ test('AC4 · a collaborator without the permission Gestionar ejecución de salid
   await expect(area(page)).toContainText('No tienes acceso a las salidas.');
   await expect(area(page).getByRole('button', { name: 'Cancelación extraordinaria' })).toHaveCount(0);
   await page.screenshot({ path: `${SHOTS}/ac4-sin-permiso.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
+// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC4 · when the service denies the cancellation, the page says the permission is missing and keeps the justification', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [running()] });
   await openDeparture(page, 'SAL-101');
@@ -80,4 +84,5 @@ test('AC4 · when the service denies the cancellation, the page says the permiss
   await expect(area(page)).toContainText(`Justificación: ${WHY}`);
   await expect(panel(page, 'Lo reservado y lo efectivamente prestado')).toContainText('Ana Ruiz · 2 viajeros Reserva en ejecución');
   await page.screenshot({ path: `${SHOTS}/ac4-denegada.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
