@@ -9,8 +9,12 @@ import { openSignIn, sessionOf, sessionsRoute, signIn } from './support/lead-por
 // colaborador" is visual only (it sends nothing) and no screen inactivates a user. The tests are left out, not weakened.
 // Not covered here: the role added to the same account with no new password (AC1 server side), the roles the credential carries
 // for each context (AC2 server side), the team side cut while the customer side stays (AC3 server side) and the customer record
-// untouched (AC4): decisions of the security service and of commercial-reservation, covered in multi-tour-security and in the
-// tests of commercial-reservation the issue lists.
+// untouched (AC4): decisions of the services. Covered in multi-tour-security by internal/adapter/postgres/registry_addrole_test.go
+// (AC1, TestI_TheRoleIsAddedToTheCustomerAccountAndNothingElseIsWritten), internal/core/signin/sides_test.go and
+// internal/adapter/http/signin_context_test.go (AC2, TestA_ASignInAsTheTeamCarriesTheTeamRolesAndOpensASessionOfTheTeam,
+// TestC_SignInWithASideHandsItToTheUseCase) and internal/adapter/postgres/userstatus_sides_test.go (AC3,
+// TestI_InactivatingAPersonWithBothSidesSwitchesOffTheTeamSideOnly, TestI_ReactivatingGivesTheTeamSideBack). AC4 belongs to
+// commercial-reservation (another owner): no test of it has been verified.
 const SHOTS = 'test-results/hu-sec-008';
 const area = (page: Page) => page.locator('app-remote-host');
 const isSignIn = (r: { url(): string; method(): string }) => r.url().endsWith('/security/public/tenants/acme/sessions') && r.method() === 'POST';
@@ -55,6 +59,7 @@ test('AC3 (sign-in) · with the internal user inactivated the team side is refus
   await refused;
   await expect(page.getByRole('button', { name: /^Iniciar sesión/ })).toBeEnabled();
   await expect(area(page).locator('.auth-feedback')).toHaveText('Correo o contraseña incorrectos');
+  await expect(area(page)).not.toContainText('internal user inactive');
   await expect(page).toHaveURL(/\/t\/acme\/ingresar$/);
   await page.getByRole('button', { name: 'Cliente', exact: true }).click();
   const opened = page.waitForResponse((r) => isSignIn(r.request()));
