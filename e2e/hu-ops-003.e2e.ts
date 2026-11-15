@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { answer, area, departureOf, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, wallIn } from './support/operations-departures';
+import { answer, area, departureOf, expectNoUnstubbedCalls, instantOf, MANAGE, nextRequest, openDeparture, openDepartures, OPS, RES_1, RES_2, wallIn } from './support/operations-departures';
 
 // HU-OPS-003 (record the start and the end of a departure), code-corhuila/multi-tour-docs#189; spec 006 of multi-tour-front (HU-FRT-001,
 // #202). The real module of operations-cost-portal, the API answered by page.route. One criterion per test.
@@ -10,8 +10,8 @@ import { answer, area, departureOf, instantOf, MANAGE, nextRequest, openDepartur
 const SHOTS = 'test-results/hu-ops-003';
 const panel = (page: Page, name: string) => area(page).getByRole('region', { name, exact: true });
 const shown = (wall: string) => wall.replace('T', ' ');
-const ANA = { reservationId: 'RES-1', customer: 'Ana Ruiz', travelers: 2, state: 'ELIGIBLE' };
-const LUIS = { reservationId: 'RES-2', customer: 'Luis Gómez', travelers: 3, state: 'NOT_ELIGIBLE' };
+const ANA = { reservationId: RES_1, customer: 'Ana Ruiz', travelers: 2, state: 'ELIGIBLE' };
+const LUIS = { reservationId: RES_2, customer: 'Luis Gómez', travelers: 3, state: 'NOT_ELIGIBLE' };
 // A departure whose scheduled start passed two hours ago and whose estimated end is two hours ahead.
 const due = (o: Record<string, unknown> = {}) => departureOf({ start: wallIn(-2), end: wallIn(2), reservations: [ANA, LUIS], ...o });
 const running = (o: Record<string, unknown> = {}) =>
@@ -21,8 +21,8 @@ test('AC1 · the real start is sent, and the page shows the departure En ejecuci
   await openDepartures(page, { departures: [due()] });
   await openDeparture(page, 'SAL-101');
   const reservations = panel(page, 'Lo reservado y lo efectivamente prestado');
-  await expect(reservations).toContainText('#RES-1 · Ana Ruiz · 2 viajeros Elegible para iniciar');
-  await expect(reservations).toContainText('#RES-2 · Luis Gómez · 3 viajeros No elegible (pago pendiente)');
+  await expect(reservations).toContainText(`#${RES_1} · Ana Ruiz · 2 viajeros Elegible para iniciar`);
+  await expect(reservations).toContainText(`#${RES_2} · Luis Gómez · 3 viajeros No elegible (pago pendiente)`);
   const startedAt = wallIn(-1);
   await answer(page, 'POST', `${OPS}/departures/SAL-101/executions`, 201, running({ actualStart: instantOf(startedAt) }));
   const sent = nextRequest(page, 'POST', `${OPS}/departures/SAL-101/executions`);
@@ -36,6 +36,7 @@ test('AC1 · the real start is sent, and the page shows the departure En ejecuci
   await expect(reservations).toContainText('Ana Ruiz · 2 viajeros Reserva en ejecución');
   await expect(reservations).toContainText('Luis Gómez · 3 viajeros Cancelada por incumplimiento de pago');
   await page.screenshot({ path: `${SHOTS}/ac1-inicio.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC2 · a real start earlier than the scheduled one, or in the future, is refused beside the field and nothing is sent', async ({ page }) => {
@@ -52,6 +53,7 @@ test('AC2 · a real start earlier than the scheduled one, or in the future, is r
   await expect(field).toHaveAccessibleDescription('El inicio real no puede ser posterior a este momento.');
   expect(sent).toBe(0);
   await page.screenshot({ path: `${SHOTS}/ac2-inicio-anterior.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC2 · in a regularization, a start earlier than the scheduled one is accepted only with its reason, which is sent', async ({ page }) => {
@@ -78,8 +80,10 @@ test('AC2 · in a regularization, a start earlier than the scheduled one is acce
   });
   await expect(panel(page, 'SAL-101')).toContainText('Finalizada');
   await page.screenshot({ path: `${SHOTS}/ac2-regularizacion-anticipada.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
+// needs the fix of the portal (loads vehicles only for the Administrator)
 for (const [who, roles] of [
   ['the Administrator', ['TENANT_ADMINISTRATOR']],
   ['a collaborator with the permission', ['OPERATIONAL_COLLABORATOR']],
@@ -94,6 +98,7 @@ for (const [who, roles] of [
     );
     await expect(panel(page, 'SAL-101')).toContainText('Programada');
     await page.screenshot({ path: `${SHOTS}/ac3-alerta-${roles[0].toLowerCase()}.png`, fullPage: true });
+    expectNoUnstubbedCalls(page);
   });
 }
 
@@ -128,6 +133,7 @@ test('AC4 · a departure past its estimated end is marked pending, is not closed
   await expect(panel(page, 'SAL-101')).toContainText(`Inicio real ${shown(startedAt)}`);
   await expect(panel(page, 'SAL-101')).toContainText(`Finalización real ${shown(finishedAt)}`);
   await page.screenshot({ path: `${SHOTS}/ac4-regularizada.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC5 · the end of a departure in execution is sent, and the page shows it Finalizada with its reservations finished', async ({ page }) => {
@@ -143,6 +149,7 @@ test('AC5 · the end of a departure in execution is sent, and the page shows it 
   await expect(panel(page, 'SAL-101')).toContainText(`Finalización real ${shown(finishedAt)}`);
   await expect(panel(page, 'Lo reservado y lo efectivamente prestado')).toContainText('Ana Ruiz · 2 viajeros Reserva finalizada');
   await page.screenshot({ path: `${SHOTS}/ac5-finalizada.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
 test('AC6 · an interruption needs its cause; it is sent and the departure ends Finalizada with the interruption recorded', async ({ page }) => {
@@ -163,20 +170,19 @@ test('AC6 · an interruption needs its cause; it is sent and the departure ends 
   await expect(panel(page, 'SAL-101')).toContainText('Marca Interrumpida');
   await expect(panel(page, 'SAL-101')).toContainText('Causa de la interrupción Derrumbe en la vía, foto del guía');
   await page.screenshot({ path: `${SHOTS}/ac6-interrumpida.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
 
-for (const [who, roles] of [
-  ['an Administrator', ['TENANT_ADMINISTRATOR']],
-  ['a collaborator', ['OPERATIONAL_COLLABORATOR']],
-] as const) {
-  test(`AC7 · ${who} without the permission Gestionar ejecución de salidas cannot open the departures to record a start or an end`, async ({ page }) => {
-    await openDepartures(page, { roles: [...roles], permissions: [], departures: [due()] });
-    await expect(area(page)).toContainText('No tienes acceso a las salidas.');
-    await expect(area(page).getByRole('button', { name: /Registrar ejecución|Gestionar ejecución/ })).toHaveCount(0);
-    await page.screenshot({ path: `${SHOTS}/ac7-sin-permiso-${roles[0].toLowerCase()}.png`, fullPage: true });
-  });
-}
+// An Administrator with no permissions is not tested: security never issues that token, an Administrator always holds it by profile.
+test('AC7 · a collaborator without the permission Gestionar ejecución de salidas cannot open the departures to record a start or an end', async ({ page }) => {
+  await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [], departures: [due()] });
+  await expect(area(page)).toContainText('No tienes acceso a las salidas.');
+  await expect(area(page).getByRole('button', { name: /Registrar ejecución|Gestionar ejecución/ })).toHaveCount(0);
+  await page.screenshot({ path: `${SHOTS}/ac7-sin-permiso.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
+});
 
+// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC7 · a collaborator who holds the permission records the start, and is not offered to schedule', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [due()] });
   await expect(area(page).getByRole('button', { name: 'Programar salida' })).toHaveCount(0);
@@ -189,4 +195,5 @@ test('AC7 · a collaborator who holds the permission records the start, and is n
   expect((await sent).postDataJSON()).toEqual({ startedAt: instantOf(startedAt) });
   await expect(panel(page, 'SAL-101')).toContainText('En ejecución');
   await page.screenshot({ path: `${SHOTS}/ac7-colaborador-con-permiso.png`, fullPage: true });
+  expectNoUnstubbedCalls(page);
 });
