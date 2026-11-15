@@ -7,7 +7,10 @@ import { openSignIn, sessionsRoute, signIn, stubJson } from './support/lead-port
 // the saga onboard-tenant answered by page.route. One criterion per test.
 // Not covered here: that the tenant is really created with its status and its first Administrator with a 72-hour temporary credential,
 // in that order (AC1 on the services), is identity-audit-api (MongoOnboardingRoutesTest), multi-tour-security
-// (firstadmin_wiring_test.go) and multi-tour-workflow-onboard-tenant (onboard_tenant_test.go); that the sessions are cut, the history kept
+// (firstadmin_wiring_test.go) and multi-tour-workflow-onboard-tenant (onboard_tenant_test.go); that a failed onboarding leaves the
+// tenant unusable and frees its identifier (AC3 on the services) is identity-audit-api (MongoOnboardingRoutesTest:
+// C_failing_a_pending_tenant_marks_it_failed_with_the_step_and_frees_the_identifier) and the saga (onboard_tenant_test.go:
+// TestA_step_two_failure_compensates_step_one); that the sessions are cut, the history kept
 // and the deadlines suspended and resumed (AC4, AC5 on the services) is identity-audit-api (MongoStatusRoutesTest) with the relay and the
 // workers; the restricted access of the Administrator of an inactive tenant is hu-sec-001.e2e.ts (AC11); the link of an unknown or inactive
 // tenant (AC7) is routes.e2e.ts (unknown_identifier_and_unknown_route_show_404, inactive_tenant_shows_the_notice_and_mounts_no_area,
@@ -180,7 +183,7 @@ test('AC6 · an inactive tenant offers only the explicit reactivation, and a cha
   await openPlatform(page, [tenantOf({ tenantStatus: 'INACTIVE' })]);
   await openDetail(page, tenantOf({ tenantStatus: 'INACTIVE' }));
   await expect(page.getByRole('button', { name: 'Inactivar operador' })).toHaveCount(0);
-  await stubJson(page, 'POST', '**/api/v1/identity-audit/tenants/tenant-acme/reactivate', 422, { error: 'INVALID_STATUS_TRANSITION', message: 'already active', traceId: 't-ida-001' });
+  await stubJson(page, 'POST', '**/api/v1/identity-audit/tenants/tenant-acme/reactivate', 422, { error: 'INVALID_STATUS_TRANSITION', message: 'status already changed', traceId: 't-ida-001' });
   await page.getByLabel('Motivo de la reactivación').fill('Soporte');
   await page.getByRole('button', { name: 'Reactivar operador' }).click();
   const refused = page.waitForResponse((r) => r.url().endsWith('/reactivate'));
@@ -188,5 +191,5 @@ test('AC6 · an inactive tenant offers only the explicit reactivation, and a cha
   await refused;
   await expect(area(page).getByRole('alert')).toContainText('El estado del operador ya cambió.');
   await expect(area(page)).toContainText('Operador inactivo');
-  await expect(area(page)).not.toContainText('already active');
+  await expect(area(page)).not.toContainText('status already changed');
 });
