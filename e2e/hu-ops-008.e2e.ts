@@ -66,7 +66,6 @@ test('AC5 · a collaborator without the permission Gestionar ejecución de salid
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC5 · a collaborator who holds the permission is offered the record and sends it; a denial of the service is told keeping the data', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [running()] });
   await openDeparture(page, 'SAL-101');
