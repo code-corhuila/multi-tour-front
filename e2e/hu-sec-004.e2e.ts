@@ -7,8 +7,14 @@ import { openSignIn, stubJson } from './support/lead-portals';
 // Not covered here: that a code is sent only to an existing account, its 30 minutes, single use and replacement (AC1, AC2 server
 // side), the count of five wrong tries and three codes per hour (AC4), the sessions cut by a reset and no other tenant touched
 // (AC3 server side), and the audit and notice of an administrative account (AC5): decisions of the security service and of
-// worker-notifications, covered in multi-tour-security (the store tests of internal/adapter/postgres and the route tests of
-// internal/adapter/http merged in PR 91 and PR 92) and in worker-notifications PR 15, as the issue lists.
+// worker-notifications, covered in multi-tour-security end to end in cmd/security/recovery_wiring_test.go
+// (TestC_ACustomerAsksForACodeResetsThePasswordAndEverySessionEnds, TestC_ThreeCodesAnHourAndNoMoreAndTheNewestIsTheOnlyOneThatWorks,
+// TestC_TheFifthWrongTryRetiresTheCodeAndTheRightOneNoLongerWorks, TestC_AFailedResetOfAnAdministratorIsAFactAndTheSuccessfulOneToo),
+// in the store tests of internal/adapter/postgres/recovery_codes_test.go (TestI_ANewCodeRetiresTheEarlierOnes,
+// TestI_AnAccountReceivesThreeCodesAnHourAndTheFourthWritesNothing, TestI_AWrongTryCountsAndTheFifthRetiresTheCode,
+// TestI_AResetWithAUsedRetiredOrExpiredCodeChangesNothing, TestI_AResetChangesThePasswordCutsTheSessionsLiftsTheBlockAndWritesTheFacts,
+// TestI_TheCodeOfAnotherAccountResetsNothing, TestI_TheFactOfAFailedResetIsWrittenOnlyForAnAdministrativeAccount), and in
+// worker-notifications PR 15.
 const SHOTS = 'test-results/hu-sec-004';
 const SENT = 'Si existe una cuenta con ese correo, enviamos un código. Revisa tu bandeja y escríbelo en la siguiente pantalla.';
 const REFUSED = 'El código no es válido o venció. Pide uno nuevo.';
