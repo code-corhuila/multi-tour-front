@@ -51,7 +51,6 @@ test('AC1 · the real cost of a departure that started is recorded apart from th
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC2 · with a parametrized cost, a collaborator calculates it with the real number of travelers served; only the concept is sent', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [running()] });
   await serveCosts(page, { baseCostCents: 2_000_000, travelersServed: 4 }, line({ concept: 'Entrada al parque', mode: 'CALCULATED', amountCents: 8_000_000, unitCostCents: 2_000_000, travelersServed: 4 }));
