@@ -81,6 +81,16 @@ test('AC3 · a used or expired link does nothing and the person asks for a new o
   await expect(area(page).locator('.auth-feedback')).toHaveText(
     'Si tu cuenta está pendiente de verificación, te enviamos un nuevo enlace. Revisa tu correo, también la carpeta de spam.',
   );
+  const first = await area(page).innerText();
+  // A second e-mail, one that has no pending account: the service answers 202 alike and the screen must not tell them apart.
+  await page.getByLabel('Correo electrónico').fill('nadie@example.test');
+  const again = page.waitForRequest((r) => r.url().endsWith('/email-verifications') && r.method() === 'POST');
+  const answeredAgain = page.waitForResponse(answerOf('/email-verifications'));
+  await page.getByRole('button', { name: 'Enviar enlace' }).click();
+  expect((await again).postDataJSON()).toEqual({ email: 'nadie@example.test' });
+  await answeredAgain;
+  await expect(page.getByRole('button', { name: 'Enviar enlace' })).toBeEnabled();
+  expect(await area(page).innerText()).toBe(first);
   await page.screenshot({ path: `${SHOTS}/ac3-nuevo-enlace.png`, fullPage: true });
 });
 
