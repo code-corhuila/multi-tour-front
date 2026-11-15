@@ -35,9 +35,25 @@ describe('demo configuration', () => {
     expect([...entry.roles].sort()).toEqual(['ACCOUNTANT', 'ANALYST', 'MANAGER', 'OPERATIONAL_COLLABORATOR', 'TENANT_ADMINISTRATOR']);
   });
 
+  // The operations-cost portal is mounted from the shipped manifest: without this entry the front cannot open it.
+  it('declares the operations-cost portal with the module next to its stylesheet and the three operations roles', () => {
+    const entry = manifest['operations-cost-portal'];
+    expect(urlOf(entry)).toBe('portals/operations-cost-portal.js');
+    // The portal reads its area from the initial params and leaves the sidebar to the container; without the flag
+    // the entries Salidas and Operación open the container's blank screen.
+    expect(entry).toMatchObject({ chrome: true });
+    expect([...entry.roles].sort()).toEqual(['MANAGER', 'OPERATIONAL_COLLABORATOR', 'TENANT_ADMINISTRATOR']);
+  });
+
   it('keeps the entries it already shipped as they are', () => {
-    expect(manifest['identity-audit-portal']).toBe('portals/identity-audit-portal.js');
-    expect(manifest['commercial-reservation-portal']).toBe('portals/commercial-reservation-portal.js');
+    expect(urlOf(manifest['identity-audit-portal'])).toBe('portals/identity-audit-portal.js');
+    expect(urlOf(manifest['commercial-reservation-portal'])).toBe('portals/commercial-reservation-portal.js');
+  });
+
+  // The container draws the operator sidebar only around the portals that declared they leave it out (RN-FRT-27).
+  it('flags the identity, the commercial and the cash portals to get the container sidebar', () => {
+    const flagged = Object.keys(manifest).filter((name) => manifest[name].chrome === true);
+    expect(flagged.sort()).toEqual(['cash-reporting-portal', 'commercial-reservation-portal', 'identity-audit-portal']);
   });
 
   it('continues serving the E2E stubs in development', () => {

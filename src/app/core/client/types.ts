@@ -5,6 +5,17 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Extra headers, e.g. `Idempotency-Key`; the client still owns `Authorization` and `X-Correlation-Id`. */
   headers?: Record<string, string>;
+  /**
+   * `'blob'`: an answer that is a file (e.g. a stored payment proof) is returned as a `Blob`, fetched with the session's
+   * `Authorization`; the portal opens it with an object URL (the CSP allows `blob:` in `img-src` and `frame-src`).
+   * Omitted or `'json'`: the answer is parsed as JSON. Errors keep the common envelope in both cases.
+   */
+  responseType?: 'json' | 'blob';
+  /**
+   * Milliseconds to wait for this request. Omitted: 10 s (30 s for a FormData). A longer window is for a call that runs a saga
+   * (e.g. 80000); a value that is not positive and finite is ignored, and the client caps it at 120 s.
+   */
+  timeoutMs?: number;
 }
 
 export interface ApiClient {
@@ -13,6 +24,8 @@ export interface ApiClient {
 
 export interface Session {
   readonly roles: string[];
+  /** Special permissions of the person (the `permissions` claim, or derived from the roles). Optional in the contract (ADR-007). */
+  readonly permissions?: string[];
   /** Set when the token is a temporary or restricted credential: the portal then routes to the matching screen. */
   readonly access?: 'password-change' | 'restricted';
   /** Name to greet the person with. Absent when the container does not know it; kept in memory only (RN-FRT-17). */
@@ -36,6 +49,11 @@ export interface PortalTarget {
   portal: string;
   /** Area key declared by that portal. */
   area: string;
+  /**
+   * Plain text values the area needs on arrival (e.g. the tour to reserve). They travel in the address and come back as
+   * `initialParams`; the container keeps only short strings under plain names and drops the rest.
+   */
+  params?: Readonly<Record<string, string>>;
 }
 
 export interface MountProps {
@@ -51,12 +69,31 @@ export interface MountProps {
    * another portal without the caller knowing any address. Never throws; a target the roles cannot use is ignored.
    */
   navigate?: (target: string | PortalTarget) => void;
+  /**
+   * Who draws the operator sidebar. `'container'`: the portal draws only its content. Absent or `'portal'`: it draws
+   * its own. The container sets it only around a portal that declared `chrome: true` in the manifest (HU-FRT-001).
+   */
+  chrome?: 'container' | 'portal';
+  /** Parameters kept across a mount; the container hands `{ area }` when the address names the area to open, plus the plain-string values of `navigate({ portal, area, params })` or of the query. */
+  initialParams?: Readonly<Record<string, string>>;
   /** The commercial name of the company, for screens that show it; tenant mounts only, omitted when blank. */
   commercialName?: string;
   /** The company's colors (#RRGGBB) or null; only tenant mounts get it. The portal paints nothing from it by itself. */
   visualIdentity?: { primaryColor: string; secondaryColor: string } | null;
+  /**
+   * Set only around a portal that draws no sidebar of its own (`chrome: 'container'`). The portal calls it with the area key of the
+   * entry it shows as current whenever that changes inside the portal (e.g. a button of one area that opens another), so the
+   * container marks that entry in its sidebar without mounting the portal again. A key the menu does not list marks no entry.
+   */
+  onAreaChange?: (area: string) => void;
   /** The portal calls it with the colors the service returned after a save; the container applies them live. */
   onVisualIdentityChange?: (colors: { primaryColor: string; secondaryColor: string }) => void;
+  /** The company's logo as a public path, or null; only tenant mounts get it (front spec 005). */
+  logoUrl?: string | null;
+  /** The company's commercial images, by position, as public paths; only tenant mounts get it. */
+  images?: { position: number; url: string }[];
+  /** The portal calls it after it saved or removed a logo or an image; the container reads the public profile again and shows the files with no reload. */
+  onTenantImagesChange?: () => void;
 }
 
 /** One field-level problem of the envelope's `details`, e.g. `{field: 'email', message: 'already in use'}`. */

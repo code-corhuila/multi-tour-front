@@ -1,3 +1,4 @@
+import { permissionsOf } from './permissions';
 import { Session, SessionAnswer } from './types';
 
 export type Refresher = (refreshToken: string) => Promise<SessionAnswer>;
@@ -29,11 +30,10 @@ function payloadOf(accessToken: string): Record<string, unknown> {
   }
 }
 
-/** An absent claim is a normal access; a present one that is not understood is treated as the most limited. */
+/** Only the exact values the restricted screens understand are kept; absent or any other value (exceptional, emergency, unknown) is a normal access. */
 function accessOf(payload: Record<string, unknown>): Access | undefined {
   const claim = payload['access'];
-  if (claim === undefined) return undefined;
-  return claim === 'password-change' ? claim : 'restricted';
+  return claim === 'password-change' || claim === 'restricted' ? claim : undefined;
 }
 
 /** The name the token may carry; blank or non-text means the container does not know it. */
@@ -64,6 +64,7 @@ function asAnswer(value: unknown): SessionAnswer {
 export class TenantSession implements Session {
   token: string | null = null;
   roles: string[] = [];
+  permissions: string[] = [];
   access: Access | undefined;
   displayName: string | undefined;
   private refreshToken: string | undefined;
@@ -80,6 +81,7 @@ export class TenantSession implements Session {
     this.token = accessToken;
     this.refreshToken = refreshToken;
     this.roles = rolesOf(payload);
+    this.permissions = permissionsOf(payload['permissions'], this.roles);
     this.access = accessOf(payload);
     this.displayName = displayNameOf(payload);
     this.timer = refreshToken
@@ -97,6 +99,7 @@ export class TenantSession implements Session {
     this.token = null;
     this.refreshToken = undefined;
     this.roles = [];
+    this.permissions = [];
     this.access = undefined;
     this.displayName = undefined;
   }

@@ -6,6 +6,7 @@ import { createContainerClient } from '../core/client/container';
 import { CONTAINER_CLIENT } from '../core/client/container-client.token';
 import { answer, jwt } from '../core/client/test-helpers';
 import { MANIFEST_LOADER, REMOTE_IMPORTER } from '../core/federation/remote-loader';
+import { TenantBranding } from '../tenant/tenant-branding';
 import { TenantVisualIdentity } from '../tenant/tenant-visual-identity';
 import { PortalPageComponent } from './portal-page.component';
 
@@ -19,13 +20,16 @@ interface Options {
   profileColors?: unknown;
   /** The commercial name of the resolved tenant profile (route data, as the tenant shell's resolver sets it). */
   commercialName?: unknown;
+  /** Provide the branding state the tenant shell would provide, started from this profile value. */
+  profileBranding?: unknown;
 }
 
-function setup({ params = {}, remote, scope, returnUrl, profileColors, commercialName, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
+function setup({ params = {}, remote, scope, returnUrl, profileColors, profileBranding, commercialName, manifest = { 'identity-audit-portal': '/stubs/id.js' } }: Options) {
   const mount = vi.fn();
   const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
   const route = {
     paramMap: of(convertToParamMap(params)),
+    queryParamMap: of(convertToParamMap(returnUrl ? { returnUrl } : {})),
     snapshot: {
       data: remote
         ? {
@@ -40,16 +44,25 @@ function setup({ params = {}, remote, scope, returnUrl, profileColors, commercia
       provideRouter([]),
       { provide: ActivatedRoute, useValue: route },
       ...(profileColors === undefined ? [] : [TenantVisualIdentity]),
+      ...(profileBranding === undefined ? [] : [TenantBranding]),
       { provide: CONTAINER_CLIENT, useValue: client },
       { provide: MANIFEST_LOADER, useValue: () => (manifest instanceof Error ? Promise.reject(manifest) : Promise.resolve(manifest)) },
       { provide: REMOTE_IMPORTER, useValue: vi.fn().mockResolvedValue({ mount }) },
     ],
   });
   if (profileColors !== undefined) TestBed.inject(TenantVisualIdentity).start(profileColors);
+  if (profileBranding !== undefined) TestBed.inject(TenantBranding).start(profileBranding, 'acme');
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(PortalPageComponent);
   fixture.detectChanges();
-  return { fixture, mount, navigate, client, identity: profileColors === undefined ? null : TestBed.inject(TenantVisualIdentity) };
+  return {
+    fixture,
+    mount,
+    navigate,
+    client,
+    identity: profileColors === undefined ? null : TestBed.inject(TenantVisualIdentity),
+    branding: profileBranding === undefined ? null : TestBed.inject(TenantBranding),
+  };
 }
 
 const until = (fixture: { detectChanges(): void }, check: () => void) =>
@@ -102,6 +115,92 @@ describe('PortalPageComponent', () => {
     mount.mock.calls[0][1].session.open({ accessToken: 'a.b.c', expiresIn: 900 });
     expect(navigate).toHaveBeenCalledWith('/t/acme/areas/x');
     client.store.of('acme').close();
+  });
+
+  // The sign-in route draws no sidebar: an operator who just signed in goes to the identity area, where the container draws the one sidebar.
+  it.each(['TENANT_ADMINISTRATOR', 'OPERATIONAL_COLLABORATOR', 'MANAGER', 'ACCOUNTANT', 'ANALYST'])('takes the %s who just signed in to the identity area', async (role) => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt([role])));
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/identity-audit-portal');
+    client.store.of('acme').close();
+  });
+
+  it('keeps the requested url over the identity area after the operator signs in', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalled());
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/x');
+    client.store.of('acme').close();
+  });
+
+  it.each([['FINAL_CUSTOMER'], ['PLATFORM_ADMINISTRATOR']])('does not move the %s after the sign-in', async (role) => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt([role])));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  it.each(['password-change', 'restricted'])('does not move an operator whose token is %s', async (access) => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'], { access })));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  // HU-COM-020: the guard sends the restricted Administrator of an inactive tenant to the sign-in with the requested url; after signing in it must go back there.
+  it('goes back to the requested url after the restricted Administrator of an inactive tenant signs in', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'], { access: 'restricted' })));
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/x');
+    client.store.of('acme').close();
+  });
+
+  it('does not send a restricted credential of another role or a temporary one back to the requested url', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '/t/acme/areas/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['OPERATIONAL_COLLABORATOR'], { access: 'restricted' })));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'], { access: 'password-change' })));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  it('takes the operator to the identity area when the requested url is not safe', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', returnUrl: '//evil.example/x' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith('/t/acme/areas/identity-audit-portal');
+    client.store.of('acme').close();
+  });
+
+  it('does not move the general login', async () => {
+    const { fixture, mount, navigate, client } = setup({ remote: 'identity-audit-portal', scope: 'general' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])), 'acme');
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  // Only the sign-in route does it: a portal mounted in an area that opens a session again must not be sent to another area.
+  it('does not move an operator when a portal of an area opens a session', async () => {
+    const { fixture, mount, navigate, client } = setup({ params: { identifier: 'acme', remote: 'billing' }, manifest: { billing: '/stubs/b.js' } });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of('acme').close();
+  });
+
+  it('does not move the platform sign-in either', async () => {
+    const { fixture, mount, navigate, client } = setup({ remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    mount.mock.calls[0][1].session.open(answer(jwt(['TENANT_ADMINISTRATOR'])));
+    expect(navigate).not.toHaveBeenCalled();
+    client.store.of().close();
   });
 
   it('never goes back to another site', async () => {
@@ -179,6 +278,41 @@ describe('PortalPageComponent', () => {
     expect('onVisualIdentityChange' in platform.mount.mock.calls[0][1]).toBe(false);
   });
 
+  it('U·the_portal_receives_the_saved_files: the logo, the images and the callback of the company', async () => {
+    const files = '/api/v1/identity-audit/public/tenants/acme';
+    const profileBranding = { logoUrl: `${files}/logo?v=abcd1234`, images: [{ position: 1, url: `${files}/images/1?v=abcd1234` }] };
+    const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileBranding });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const props = mount.mock.calls[0][1];
+    expect(props.logoUrl).toBe(`${files}/logo?v=abcd1234`);
+    expect(props.images).toEqual(profileBranding.images);
+    expect(typeof props.onTenantImagesChange).toBe('function');
+  });
+
+  it('U·the_callback_reads_the_profile_again: it asks the service of the company with the client of the portal', async () => {
+    const { fixture, mount, branding } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileBranding: {} });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const refresh = vi.spyOn(branding!, 'refresh').mockResolvedValue();
+    const props = mount.mock.calls[0][1];
+    props.onTenantImagesChange();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    // the public profile needs no credential: the refresh uses the client of an anonymous mount, so an expired token cannot end the session
+    expect(typeof refresh.mock.calls[0][0].request).toBe('function');
+    expect(refresh.mock.calls[0][1]).toBe('acme');
+  });
+
+  it('U·the_platform_scope_gets_no_files: the platform and the general login get none of the three props', async () => {
+    const platform = setup({ remote: 'identity-audit-portal', profileBranding: {} });
+    await until(platform.fixture, () => expect(platform.mount).toHaveBeenCalledTimes(1));
+    for (const key of ['logoUrl', 'images', 'onTenantImagesChange']) expect(key in platform.mount.mock.calls[0][1], key).toBe(false);
+  });
+
+  it('U·a_portal_without_the_new_props_still_mounts: a tenant mount with no provider gets none', async () => {
+    const bare = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(bare.fixture, () => expect(bare.mount).toHaveBeenCalledTimes(1));
+    for (const key of ['logoUrl', 'images', 'onTenantImagesChange']) expect(key in bare.mount.mock.calls[0][1], key).toBe(false);
+  });
+
   it('U-a_tenant_without_colors_gets_null', async () => {
     const { fixture, mount } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal', profileColors: null });
     await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
@@ -230,6 +364,18 @@ describe('PortalPageComponent', () => {
     client.store.of('acme').open(answer(jwt(['CLIENT'], { displayName: 'Ana Pérez' })));
     expect(session.displayName).toBe('Ana Pérez');
     client.store.of('acme').close();
+  });
+
+  // HU-OPS-003: a portal decides what to draw by the special permissions of the person; the session it receives must carry them.
+  it('U·container_passes_the_permissions_of_the_session_to_the_portal (tenant mount)', async () => {
+    const { fixture, mount, client } = setup({ params: { identifier: 'acme' }, remote: 'identity-audit-portal' });
+    await until(fixture, () => expect(mount).toHaveBeenCalledTimes(1));
+    const { session } = mount.mock.calls[0][1];
+    expect(session.permissions).toEqual([]);
+    client.store.of('acme').open(answer(jwt(['TENANT_ADMINISTRATOR'], { permissions: ['MANAGE_DEPARTURE_EXECUTION', 'MANAGE_CASH'] })));
+    expect(session.permissions).toEqual(['MANAGE_DEPARTURE_EXECUTION', 'MANAGE_CASH']);
+    client.store.of('acme').close();
+    expect(session.permissions).toEqual([]);
   });
 
   it('U·the_general_login_session_follows_the_name_of_the_session_it_opens', async () => {

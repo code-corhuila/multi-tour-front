@@ -57,4 +57,19 @@ describe('authGuard', () => {
     client.store.of('acme').open({ accessToken: tokenWith({ access: 'password-change' }), expiresIn: 900 });
     expect(run('acme', '/t/acme/areas/x')).not.toBe(true);
   });
+
+  // HU-COM-020, comment of Jhon on #186: the Administrator of an inactive tenant signs in with a restricted access to handle its pending obligations; the backend allows only that work.
+  it('lets the Administrator of an inactive tenant in with a restricted credential', () => {
+    const { client, run } = setup();
+    client.store.of('acme').open({ accessToken: tokenWith({ access: 'restricted', roles: ['TENANT_ADMINISTRATOR'] }), expiresIn: 900 });
+    expect(run('acme', '/t/acme/areas/commercial-reservation-portal')).toBe(true);
+  });
+
+  it('does not let a restricted credential of another role or a restricted one without roles in', () => {
+    const { client, run } = setup();
+    client.store.of('acme').open({ accessToken: tokenWith({ access: 'restricted', roles: ['OPERATIONAL_COLLABORATOR'] }), expiresIn: 900 });
+    expect(run('acme', '/t/acme/areas/x')).not.toBe(true);
+    client.store.of('acme').open({ accessToken: tokenWith({ access: 'restricted' }), expiresIn: 900 });
+    expect(run('acme', '/t/acme/areas/x')).not.toBe(true);
+  });
 });

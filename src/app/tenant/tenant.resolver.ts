@@ -11,6 +11,9 @@ export interface TenantProfile {
   tenantStatus: 'ACTIVE' | 'INACTIVE';
   /** Null or absent when the company chose no colors: the platform look applies. */
   visualIdentity?: VisualIdentity | null;
+  /** The company's logo and commercial images as public paths; absent or empty when it saved none (front spec 005). */
+  logoUrl?: string | null;
+  images?: { position: number; url: string }[];
 }
 
 export type TenantLookup =

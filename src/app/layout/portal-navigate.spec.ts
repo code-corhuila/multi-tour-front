@@ -27,6 +27,7 @@ function setup({ params = {}, remote, scope, area }: Options) {
   const client = createContainerClient({ baseUrl: '', fetch: vi.fn() });
   const route = {
     paramMap: of(convertToParamMap(params)),
+    queryParamMap: of(convertToParamMap(area ? { area } : {})),
     snapshot: {
       data: remote ? { remote, ...(scope ? { scope } : {}) } : {},
       queryParamMap: convertToParamMap(area ? { area } : {}),
