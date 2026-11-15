@@ -47,7 +47,11 @@ test('AC2, AC3, AC4, AC5 (expired) and AC9 · every refusal shows the same gener
   for (const cause of causes) {
     await page.unroute(sessionsRoute('acme'));
     await stubJson(page, 'POST', sessionsRoute('acme'), 401, refusal(cause));
+    const answered = page.waitForResponse((r) => r.url().includes('/security/public/tenants/acme/sessions') && r.request().method() === 'POST');
     await signIn(page);
+    await answered;
+    // The send is over (the button is back): only now the screen shows the answer of this round, not the one before.
+    await expect(page.getByRole('button', { name: /^Iniciar sesión/ })).toBeEnabled();
     await expect(area(page).locator('.auth-feedback')).toHaveText(REFUSED);
     // The answer of the service never reaches the screen, and no field is marked as the wrong one.
     await expect(area(page)).not.toContainText(cause);
@@ -99,8 +103,11 @@ test('AC8 · a session whose renewal is refused is closed: the next area asks to
   await signIn(page, { team: 'Administrador' });
   await expect(area(page)).toContainText('Control de la operación');
   await refused;
-  await followLink(page, '/t/acme/areas/operations-cost-portal');
-  await expect(page).toHaveURL(/\/t\/acme\/ingresar\?returnUrl=/);
+  // The session closes just after the refused answer arrives: the link is followed again until the guard sees it closed.
+  await expect(async () => {
+    await followLink(page, '/t/acme/areas/operations-cost-portal');
+    await expect(page).toHaveURL(/\/t\/acme\/ingresar\?returnUrl=/, { timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
   await expect(page.getByLabel('Correo electrónico')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/ac8-revocada.png`, fullPage: true });
 });

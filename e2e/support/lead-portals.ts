@@ -28,10 +28,13 @@ export const sessionOf = (roles: string[], claims: object = {}, extra: object = 
   ...extra,
 });
 
-/** Skips the test when the platform does not serve the real module (the bare image of the front ships none). */
+/** Skips the test when the platform does not serve the real module (the bare image of the front ships none, or answers html). */
 export async function requireModule(page: Page, portal: string): Promise<void> {
-  const module = await page.request.get(`/${SHIPPED_MANIFEST[portal]}`);
-  test.skip(!module.ok(), `the platform under test does not serve the module of ${portal}`);
+  const path = SHIPPED_MANIFEST[portal];
+  if (!path) throw new Error(`${portal} is not in the manifest the front ships (public/federation.manifest.json)`);
+  const module = await page.request.get(`/${path}`);
+  const javascript = (module.headers()['content-type'] ?? '').includes('javascript');
+  test.skip(!module.ok() || !javascript, `the platform under test does not serve the module of ${portal}`);
 }
 
 /** Opens the sign-in of the identity portal at the link of a tenant (acme by default) or, with null, at the platform. */
@@ -56,6 +59,8 @@ export async function signIn(page: Page, { team }: { team?: 'Administrador' | 'C
 /**
  * Opens an area of a tenant with its real module and a session of the given roles. The session lives only in memory and only
  * the identity portal opens it, so the way in is the real sign-in screen with the security route stubbed.
+ * Only for team profiles (Administrador or Colaborador, chosen by the roles) in an area of a tenant: not for FINAL_CUSTOMER,
+ * whose tab is another one, nor for PLATFORM_ADMINISTRATOR, who signs in at /platform.
  */
 export async function openAreaAs(page: Page, portal: string, roles: string[], { tenant = 'acme', claims = {} }: { tenant?: string; claims?: object } = {}): Promise<void> {
   await requireModule(page, portal);
