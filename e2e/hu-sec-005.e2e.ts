@@ -3,7 +3,8 @@ import { openSignIn, sessionOf, sessionsRoute, signIn, stubJson } from './suppor
 
 // HU-SEC-005 (manage the tenant's internal users), code-corhuila/multi-tour-docs#161; spec 006 of multi-tour-front (HU-FRT-001,
 // #202). The real module of identity-audit-portal at the sign-in of a tenant link, the security routes answered by page.route.
-// What a registered internal user meets at the first access; one criterion per test.
+// What a registered internal user meets at the first access; one criterion per test. The areas closed to a temporary credential
+// are in e2e/hu-sec-001.e2e.ts (AC5); here the contract of the PUT is checked ({newPassword} only, and the Authorization header).
 // Not met by the module: AC1 and AC2 from the screen of the Administrator, AC4, AC5 and AC6, and the Administrator side of AC7.
 // On the platform the entry "Colaboradores" of the container opens its blank screen (areas/pendiente?area=colaboradores: the
 // identity portal does not read the area yet), so no screen of the team is reached; and inside the module "Registrar
