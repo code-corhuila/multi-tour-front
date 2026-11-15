@@ -7,15 +7,16 @@ import { openSignIn, sessionsRoute, signIn, stubJson } from './support/lead-port
 // routes answered by page.route. One criterion per test (or per group of criteria one screen shows).
 // Not covered here: that every service really sends its audited actions and that the record keeps them (AC1, AC2 on the services:
 // the events of commercial-reservation and cash-reporting, still open in the issue); that the service gives each reader only what it
-// may read and refuses the rest with 403 (AC3, AC4, AC5, AC8 on the server) is identity-audit-api (MongoAuditListRouteTest:
+// may read and refuses the rest with 403 (AC3, AC4, AC5 on the server), and AC8 (the audit across tenants refused with 403 to a user
+// of a tenant), is identity-audit-api (MongoAuditListRouteTest:
 // C_only_the_platform_administrator_reads_the_audit_across_tenants, C_a_tenant_audit_is_read_by_its_administrator_and_by_an_enabled_role_only);
 // that the change of an access is recorded with who, when and for whom (AC6 on the server) is MongoAuditAccessRouteTest; a repeated
 // event keeping one record (AC7) is MongoAuditEventRouteTest (C_a_repeated_event_is_200_and_keeps_one_record).
-// Not met by the module in the composed platform: AC4 and AC8 (the Tenant Administrator reads the audit of its own tenant), AC5 (a
-// Manager without the access is told so) and AC6 (the Administrator switches the access of an optional role). The module draws those
-// screens behind "Auditoría" and "Colaboradores" of its own sidebar, but the container hides that sidebar (identity-chrome-adapter.ts)
-// and its own entries "Auditoría" and "Colaboradores" open the blank screen areas/pendiente (operator-nav.ts, `fixed: true`), because
-// the portal does not read the area it is opened at: no person can reach them.
+// Not met by the module in the composed platform: AC4 (the Tenant Administrator reads the audit of its own tenant), and AC5 (a role
+// without the access is told so) and AC6 (the Administrator switches the access of a role), both of the optional roles (Gerente,
+// Contador, Analista). The module draws those screens behind "Auditoría" and "Colaboradores" of its own sidebar, but the container
+// hides that sidebar (identity-chrome-adapter.ts) and its own entries "Auditoría" and "Colaboradores" open the blank screen
+// areas/pendiente (operator-nav.ts, `fixed: true`), because the portal does not read the area it is opened at: no person can reach them.
 const SHOTS = 'test-results/hu-ida-002';
 const ALL = /\/api\/v1\/identity-audit\/audit-records\?/;
 const area = (page: Page) => page.locator('app-remote-host');
