@@ -10,11 +10,14 @@ const area = (page: Page) => page.locator('app-remote-host');
 
 async function toDetail(page: Page, code: string): Promise<void> {
   await goTo(page, 'Reservas');
-  const toggle = page.getByRole('button', { name: /Ver todas las reservas|Ver reservas activas/ }).first();
-  await toggle.waitFor();
-  if (/todas/.test(await toggle.innerText())) await toggle.click();
-  await area(page).locator('tbody tr', { hasText: `#${code}` }).first().getByRole('button', { name: 'Ver detalle' }).click();
-  await expect(area(page)).toContainText('Detalle de reserva');
+  // Clicking the sidebar item of the area already open mounts the portal again, so the list can be redrawn without the archived rows
+  // after the toggle was read. The whole step is retried until the row of the reservation is the one clicked.
+  const row = area(page).locator('tbody tr', { hasText: `#${code}` }).first();
+  await expect(async () => {
+    if (!(await row.isVisible())) await page.getByRole('button', { name: 'Ver todas las reservas' }).first().click({ timeout: 1000 });
+    await row.getByRole('button', { name: 'Ver detalle' }).click({ timeout: 2000 });
+    await expect(area(page)).toContainText('Detalle de reserva', { timeout: 2000 });
+  }).toPass({ timeout: 15_000 });
 }
 
 async function toChange(page: Page, code: string): Promise<void> {
