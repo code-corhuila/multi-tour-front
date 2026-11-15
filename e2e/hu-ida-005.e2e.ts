@@ -9,6 +9,8 @@ import { IDENTITY, requireModule, sessionOf, sessionsRoute, signIn, stubJson } f
 // Not covered here: that the service stores the files only for the tenant of the token, proves the kind by the bytes and keeps the
 // previous file on a refusal (AC3, AC4 on the server) is identity-audit-api (MongoTenantImagesRouteTest:
 // C_the_tenant_is_the_one_of_the_token_and_a_body_that_names_one_is_a_400, C_a_file_that_is_not_allowed_is_400_and_the_previous_one_stays);
+// that the public profile returns the files, or none (AC1, AC2, AC5 on the server), is MongoPublicImagesRouteTest
+// (C_the_public_profile_returns_the_logo_and_the_images, C_a_tenant_without_a_logo_or_images_returns_none);
 // which paths the band accepts and that a broken picture is hidden is front tenant-brand-band.spec.ts.
 const SHOTS = 'test-results/hu-ida-005';
 const FILES = '/api/v1/identity-audit/public/tenants/acme';
