@@ -43,7 +43,6 @@ test('AC1 · the Administrator cancels a Programada departure after a confirmati
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 test('AC4 · a collaborator, even with the permission Gestionar ejecución de salidas, is not offered to cancel a future Programada departure', async ({ page }) => {
   await openDepartures(page, { roles: ['OPERATIONAL_COLLABORATOR'], permissions: [MANAGE], departures: [departureOf()] });
   await openDeparture(page, 'SAL-101');
@@ -54,7 +53,6 @@ test('AC4 · a collaborator, even with the permission Gestionar ejecución de sa
   expectNoUnstubbedCalls(page);
 });
 
-// needs the fix of the portal (loads vehicles only for the Administrator)
 for (const [who, roles] of [
   ['the Administrator', ['TENANT_ADMINISTRATOR']],
   ['a collaborator with the permission', ['OPERATIONAL_COLLABORATOR']],
