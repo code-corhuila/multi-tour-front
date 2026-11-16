@@ -98,8 +98,8 @@ test('AC7 · an open session renews its credential by itself, without the passwo
 test('AC8 · a session whose renewal is refused is closed: the next area asks to sign in again', async ({ page }) => {
   await stubJson(page, 'POST', sessionsRoute('acme'), 200, sessionOf(['TENANT_ADMINISTRATOR'], { tenantId: 'tenant-acme' }, { expiresIn: 61, refreshToken: 'renewal-1' }));
   await stubJson(page, 'POST', '**/api/v1/security/public/sessions/refresh', 401, refusal('session revoked'));
+  await openSignIn(page); // it may skip the test: nothing is awaited before it
   const refused = page.waitForResponse((r) => r.url().includes('/sessions/refresh'));
-  await openSignIn(page);
   await signIn(page, { team: 'Administrador' });
   await expect(area(page)).toContainText('Control de la operación');
   await refused;
