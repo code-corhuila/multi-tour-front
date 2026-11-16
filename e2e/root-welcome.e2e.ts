@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { serveStubs, serveTenantProfile } from './support/container';
+import { ACME, serveStubs, serveTenantProfile } from './support/container';
 
 test.beforeEach(async ({ page }) => {
   await serveStubs(page);
@@ -7,6 +7,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('E2E root_shows_the_welcome_and_ingresar_reaches_the_tenant_login', async ({ page }) => {
+  // The welcome links to the default tenant; the shared stub answers only `acme` and `dormant`, so this one is served here
+  await page.route('**/api/v1/identity-audit/public/tenants/travesia-natural', (route) =>
+    route.fulfill({ json: { ...ACME, identifier: 'travesia-natural', commercialName: 'Travesía Natural' } }),
+  );
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1, name: /Destinos que valen la pena vivir/ })).toBeVisible();
   await page.locator('header.mth-header').getByRole('link', { name: 'Ingresar' }).click();
